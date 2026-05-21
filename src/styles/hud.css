@@ -1,0 +1,14 @@
+/* =============================================================================
+ * src/styles/hud.css
+ * -----------------------------------------------------------------------------
+ * HUD-only styles that are awkward to express in Tailwind utility classes —
+ * for instance text-shadow for readability over the bright canvas.
+ *
+ * WHAT BELONGS HERE: HUD-specific rules.
+ * WHAT DOES NOT:     overlay or panel styles (keep them next to the
+ *                    component, or in `variables.css`).
+ * ============================================================================= */
+
+.hud {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}

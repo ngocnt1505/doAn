@@ -1,0 +1,19 @@
+/* =============================================================================
+ * src/styles/animations.css
+ * -----------------------------------------------------------------------------
+ * Shared CSS animations (overlay fades, HUD pulses).
+ *
+ * WHAT BELONGS HERE: @keyframes used by more than one component.
+ * WHAT DOES NOT:     component-local animations — keep those next to the
+ *                    component if they only apply once.
+ * ============================================================================= */
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes hud-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}

@@ -1,0 +1,49 @@
+/* =============================================================================
+ * globals.css
+ * -----------------------------------------------------------------------------
+ * RESPONSIBILITY
+ *   The single global stylesheet imported by `app/layout.tsx`. It sets up
+ *   Tailwind, defines CSS custom properties (design tokens), and applies a
+ *   handful of reset rules that should affect EVERY page in the app.
+ *
+ * WHY IT EXISTS
+ *   Next.js' App Router requires one entry-level stylesheet per app. We use it
+ *   to register Tailwind and bring in our own modular stylesheets from
+ *   `src/styles/` (variables, animations, hud). This keeps the global file
+ *   thin and lets each concern live in its own file.
+ *
+ * WHAT BELONGS HERE
+ *   - Tailwind directive (`@import "tailwindcss";`)
+ *   - Imports of small global stylesheets in `src/styles/`
+ *   - Body/html resets that must apply to every route
+ *   - Theme tokens (color, font) exposed via CSS variables
+ *
+ * WHAT DOES NOT BELONG HERE
+ *   - Component-specific styles → put those in the component or `src/styles/`
+ *   - Game/canvas-only styles → `src/styles/hud.css`
+ *   - JS logic of any kind
+ * ============================================================================= */
+
+@import "tailwindcss";
+
+/* Modular sub-stylesheets — keep this file lean and delegate the details. */
+@import "../styles/variables.css";
+@import "../styles/animations.css";
+@import "../styles/hud.css";
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The Three.js canvas needs to behave like a block element with no extra
+ * scrollbars. Setting it here once avoids repeating in every <canvas> usage. */
+canvas {
+  display: block;
+  touch-action: none;
+}

@@ -1,0 +1,17 @@
+/* =============================================================================
+ * src/styles/variables.css
+ * -----------------------------------------------------------------------------
+ * Design tokens (colors, spacing) used across the app. CSS variables — not
+ * Tailwind — because the canvas-side UI references some of these directly.
+ *
+ * WHAT BELONGS HERE: globally meaningful values (colors, type scale).
+ * WHAT DOES NOT:     component-local styling.
+ * ============================================================================= */
+
+:root {
+  --color-bg:   #0b0d12;
+  --color-fg:   #f3f4f6;
+  --color-accent: #4ea1ff;
+  --color-danger: #e06b6b;
+  --color-success: #4ade80;
+}
