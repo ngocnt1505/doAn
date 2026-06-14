@@ -36,12 +36,12 @@
  * ----------------------------------------------------------------------------- */
 
 import { dispatch, getState } from "./gameStore";
-import { spawnSystem } from "@/systems/spawnSystem";
-import { waveSystem } from "@/systems/waveSystem";
 import { shootingSystem } from "@/systems/shootingSystem";
 import { movementSystem } from "@/systems/movementSystem";
-import { collisionSystem } from "@/systems/collisionSystem";
 import { cleanupSystem } from "@/systems/cleanupSystem";
+import { waveSystem } from "@/systems/waveSystem";
+import { spawnSystem } from "@/systems/spawnSystem";
+import { collisionSystem } from "@/systems/collisionSystem";
 import { renderSystem, type RenderContext } from "@/systems/renderSystem";
 
 let rafId = 0;
@@ -68,12 +68,12 @@ export function startGameLoop(ctx: RenderContext): () => void {
       dispatch({ type: "TICK", dt });
 
       // ORDER MATTERS. Comment lines below to debug a specific system.
-      waveSystem(dt);
-      spawnSystem(dt);
-      shootingSystem(dt);
-      movementSystem(dt);
-      collisionSystem(dt);
-      cleanupSystem(dt);
+      waveSystem(dt);       // decide WHEN/WHAT new enemies should appear
+      spawnSystem(dt);      // drain spawn queue → create entities
+      shootingSystem(dt);   // mouse click → new bullet (parabolic launch)
+      movementSystem(dt);   // integrate velocity + steer enemies + gravity
+      collisionSystem(dt);  // bullet ↔ enemy hits → mark dying + score
+      cleanupSystem(dt);    // tick dying timers, retire bullets/corpses
     }
 
     // --- Render runs every frame, even when paused, so the scene stays drawn.

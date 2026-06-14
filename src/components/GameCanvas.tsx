@@ -25,25 +25,42 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createThreeContext, type ThreeContext } from "@/lib/threeSetup";
+import { preloadModels } from "@/lib/modelCache";
 import { useGameLoop } from "@/hooks/useGameLoop";
 import { useKeyboard } from "@/hooks/useKeyboard";
+import { useMouse } from "@/hooks/useMouse";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [ctx, setCtx] = useState<ThreeContext | null>(null);
 
-  // Build the Three.js context once the canvas is mounted in the DOM.
+  // Preload every .glb, THEN build the Three.js context. Loading first means
+  // the cannon, house, fences and monsters can all clone their model
+  // synchronously — no per-spawn fetch, no placeholder pop-in.
   useEffect(() => {
     if (!canvasRef.current) return;
-    const next = createThreeContext(canvasRef.current);
-    setCtx(next);
-    return () => next.dispose();
+    let context: ThreeContext | null = null;
+    let cancelled = false;
+
+    preloadModels().then(() => {
+      if (cancelled || !canvasRef.current) return;
+      context = createThreeContext(canvasRef.current);
+      setCtx(context);
+    });
+
+    return () => {
+      cancelled = true;
+      context?.dispose();
+    };
   }, []);
 
   // Start the loop once the context exists.
   useGameLoop(ctx);
 
-  // Forward keyboard → store. Independent of the canvas itself.
+  // Mouse → fire-at-target. Needs ctx for the camera + ground raycast.
+  useMouse(ctx);
+
+  // Keyboard handles lifecycle shortcuts (ESC = pause). No movement keys.
   useKeyboard();
 
   return (

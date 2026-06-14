@@ -22,8 +22,7 @@
  * ============================================================================= */
 
 import type { GameState, InputState } from "@/types/game";
-import type { PlayerEntity } from "@/types/entity";
-import { PLAYER_ID, PLAYER_MAX_HEALTH } from "./constants";
+import { createPlayerEntity } from "@/entities/Player";
 
 /** Empty input snapshot — used as the default until a hook overwrites it. */
 export const emptyInput = (): InputState => ({
@@ -34,17 +33,6 @@ export const emptyInput = (): InputState => ({
   shoot: false,
 });
 
-/** Fresh player entity, centred at the world origin. */
-export const createPlayer = (): PlayerEntity => ({
-  id: PLAYER_ID,
-  kind: "player",
-  position: [0, 0, 0],
-  velocity: [0, 0, 0],
-  dead: false,
-  health: PLAYER_MAX_HEALTH,
-  lastShotAt: 0,
-});
-
 /** The state every game starts from. The reducer returns this on RESET. */
 export const initialState = (): GameState => ({
   phase: "idle",
@@ -52,6 +40,6 @@ export const initialState = (): GameState => ({
   elapsedMs: 0,
   score: 0,
   wave: 0,
-  entities: [createPlayer()],
+  entities: [createPlayerEntity()],
   input: emptyInput(),
 });

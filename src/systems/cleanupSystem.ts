@@ -22,6 +22,7 @@
  * ============================================================================= */
 
 import { dispatch, getState } from "@/core/gameStore";
+import { emit } from "@/core/eventBus";
 import type { Entity } from "@/types/entity";
 
 export function cleanupSystem(dt: number): void {
@@ -32,12 +33,24 @@ export function cleanupSystem(dt: number): void {
   const next: Entity[] = [];
 
   for (const e of state.entities) {
-    // Tick down bullet lifetime and mark expired ones dead.
     if (e.kind === "bullet" && !e.dead) {
+      // Ground impact — the bullet has finished its arc. Emit an event so
+      // visual/audio fx can react, then drop it.
+      if (e.position[1] <= 0) {
+        emit("bullet:landed", {
+          bulletId: e.id,
+          at: [e.position[0], 0, e.position[2]],
+        });
+        didChange = true;
+        continue;
+      }
+
+      // Safety-net lifetime — should never trigger before ground impact
+      // under normal gravity, but keeps us safe if something extreme happens.
       const lifetime = e.lifetime - dt;
       if (lifetime <= 0) {
         didChange = true;
-        continue; // drop expired bullet
+        continue;
       }
       if (lifetime !== e.lifetime) {
         next.push({ ...e, lifetime });
@@ -46,15 +59,25 @@ export function cleanupSystem(dt: number): void {
       }
     }
 
+    // Enemy in its death animation: tick the timer; when it hits zero the
+    // corpse is removed from the world.
+    if (e.kind === "enemy" && e.dyingMs !== undefined) {
+      const remaining = e.dyingMs - dt;
+      if (remaining <= 0) {
+        didChange = true;
+        continue;
+      }
+      next.push({ ...e, dyingMs: remaining });
+      didChange = true;
+      continue;
+    }
+
     if (e.dead) {
       didChange = true;
-      continue; // drop dead entities
+      continue;
     }
     next.push(e);
   }
 
   if (didChange) dispatch({ type: "REPLACE_ENTITIES", entities: next });
-
-  // TODO: emit "wave:complete" when no enemies remain after a wave started.
-  // TODO: check player health to dispatch LOSE.
 }

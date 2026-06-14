@@ -13,22 +13,28 @@
 
 import * as THREE from "three";
 import type { BulletEntity, Vec3 } from "@/types/entity";
-import { BULLET_LIFETIME_MS, BULLET_SPEED } from "@/core/constants";
-import { normalizeV3, scaleV3 } from "@/lib/math";
+import { BULLET_LIFETIME_MS } from "@/core/constants";
 import { uid } from "@/lib/helpers";
 
+/**
+ * Cannon ball / projectile.
+ *
+ * Velocity is computed by the caller (the shooting system uses a parabolic
+ * solve so the bullet lands on the clicked target). The movement system
+ * integrates `velocity` and adds gravity each frame; cleanup retires it on
+ * ground impact or once `lifetime` expires.
+ */
 export function createBulletEntity(
   ownerId: string,
   position: Vec3,
-  direction: Vec3,
+  velocity: Vec3,
 ): BulletEntity {
   return {
     id: uid("bullet"),
     kind: "bullet",
     ownerId,
     position,
-    // Velocity = unit direction * speed. Movement system uses this directly.
-    velocity: scaleV3(normalizeV3(direction), BULLET_SPEED),
+    velocity,
     dead: false,
     lifetime: BULLET_LIFETIME_MS,
   };

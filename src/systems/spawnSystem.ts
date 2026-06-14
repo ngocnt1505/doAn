@@ -26,18 +26,19 @@
 
 import { dispatch } from "@/core/gameStore";
 import { createEnemyEntity } from "@/entities/Enemy";
-import type { Vec3 } from "@/types/entity";
+import type { EnemyVariant, Vec3 } from "@/types/entity";
 
 interface EnemySpawnRequest {
   kind: "enemy";
   position: Vec3;
+  variant: EnemyVariant;
 }
 
 const queue: EnemySpawnRequest[] = [];
 
 /** Other systems call this to request a spawn. Cheap, synchronous. */
-export function requestEnemySpawn(position: Vec3): void {
-  queue.push({ kind: "enemy", position });
+export function requestEnemySpawn(position: Vec3, variant: EnemyVariant): void {
+  queue.push({ kind: "enemy", position, variant });
 }
 
 export function spawnSystem(_dt: number): void {
@@ -48,7 +49,10 @@ export function spawnSystem(_dt: number): void {
   while (queue.length > 0) {
     const req = queue.shift()!;
     if (req.kind === "enemy") {
-      dispatch({ type: "SPAWN", entity: createEnemyEntity(req.position) });
+      dispatch({
+        type: "SPAWN",
+        entity: createEnemyEntity(req.position, req.variant),
+      });
     }
   }
 

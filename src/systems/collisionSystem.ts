@@ -22,7 +22,7 @@
 
 import { dispatch, getState } from "@/core/gameStore";
 import { emit } from "@/core/eventBus";
-import { ENEMY_SCORE_VALUE } from "@/core/constants";
+import { ENEMY_DEATH_MS, ENEMY_STATS } from "@/core/constants";
 import { distanceSqV3 } from "@/lib/math";
 import type { Entity } from "@/types/entity";
 
@@ -41,12 +41,16 @@ export function collisionSystem(_dt: number): void {
 
     for (const enemy of next) {
       if (enemy.kind !== "enemy" || enemy.dead) continue;
+      // Skip enemies that are already in their death animation — they're
+      // visually still on screen but no longer valid hit targets.
+      if (enemy.dyingMs !== undefined) continue;
       if (distanceSqV3(bullet.position, enemy.position) > HIT_RADIUS_SQ) continue;
 
-      // Hit! Mark both dead — actual removal happens in cleanupSystem.
+      // Hit! The bullet is consumed immediately; the enemy enters its death
+      // animation — cleanupSystem ticks `dyingMs` down and then removes it.
       bullet.dead = true;
-      enemy.dead = true;
-      scoreDelta += ENEMY_SCORE_VALUE;
+      enemy.dyingMs = ENEMY_DEATH_MS;
+      scoreDelta += ENEMY_STATS[enemy.variant].score;
 
       emit("bullet:hit", { bulletId: bullet.id, targetId: enemy.id });
       emit("enemy:killed", { enemyId: enemy.id, byOwnerId: bullet.ownerId });

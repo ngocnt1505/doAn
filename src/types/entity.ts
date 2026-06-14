@@ -45,13 +45,29 @@ export interface PlayerEntity extends BaseEntity {
   health: number;
   /** Last time (ms) the player fired — used by the shooting system cooldown. */
   lastShotAt: number;
+  /** World-space point the cannon barrel is currently aiming at. `null` means
+   *  the barrel is in its rest pose (looking straight down-yard). The render
+   *  system reads this each frame to orient the barrel pivot. */
+  aimTarget: Vec3 | null;
 }
+
+/** The flavor of monster. Drives stats AND visual mesh. Keep the list short —
+ *  every new variant needs a mesh factory and a stats block. */
+export type EnemyVariant = "grunt" | "brute" | "stalker";
 
 export interface EnemyEntity extends BaseEntity {
   readonly kind: "enemy";
+  readonly variant: EnemyVariant;
   health: number;
   /** Higher number = faster enemy. Used by the movement system. */
   speed: number;
+  /** Per-enemy phase offset (0..2π) for the sine-wave wander applied by the
+   *  movement system. Set once at spawn so each monster weaves differently. */
+  readonly wanderPhase: number;
+  /** Milliseconds remaining in the death animation. While > 0 the enemy is
+   *  visually dying (sinking + toppling) but still on the entity list so the
+   *  render system can finish the animation. `undefined` = alive. */
+  dyingMs?: number;
 }
 
 export interface BulletEntity extends BaseEntity {

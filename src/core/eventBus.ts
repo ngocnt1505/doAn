@@ -30,6 +30,7 @@
 export interface GameEvents {
   "enemy:killed":  { enemyId: string; byOwnerId: string };
   "bullet:hit":    { bulletId: string; targetId: string };
+  "bullet:landed": { bulletId: string; at: readonly [number, number, number] };
   "wave:complete": { wave: number };
   "player:hit":    { amount: number };
 }
