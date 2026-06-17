@@ -2,86 +2,52 @@
  * src/core/gameLoop.ts
  * -----------------------------------------------------------------------------
  * RESPONSIBILITY
- *   Schedules the per-frame "tick" using requestAnimationFrame and calls
- *   each system in the correct order. This is the heartbeat of the game.
+ *   A minimal requestAnimationFrame driver. Each frame it computes the elapsed
+ *   delta-time (seconds, clamped) and hands it to a single `frame` callback.
+ *   The caller decides what to do with dt — dispatch TICK, run systems, render.
  *
  * WHY IT EXISTS
- *   We want a clear, single place that answers: "what happens every frame
- *   and in which order?". That order matters — e.g. movement must run
- *   before collision so collisions use updated positions.
- *
- *   The loop is intentionally outside React. React re-renders are driven
- *   by the store's subscription; the simulation never waits for React.
+ *   Separating "when to step" (here) from "what a step does" (the callback)
+ *   keeps this file pure plumbing and lets the React bridge own the wiring:
+ *     Input → Dispatch → Reducer → Update State → Run Systems → Render Scene
  *
  * WHAT BELONGS HERE
- *   - rAF scheduling
- *   - delta-time calculation
- *   - The fixed ORDER of system calls
+ *   - rAF scheduling, dt computation, start/stop
  *
  * WHAT DOES NOT BELONG HERE
- *   - System logic (each system is in `src/systems/`)
- *   - Three.js scene creation (`src/lib/threeSetup.ts`)
- *   - React effects (the loop is started by a hook, see
- *     `src/hooks/useGameLoop.ts`)
- *
- * --- The rendering pipeline (read this once) ---------------------------------
- *   Frame N:
- *     1. Compute dt (delta-time)
- *     2. dispatch TICK — advances clocks in the store
- *     3. Run simulation systems in order:
- *           spawn → wave → input/shooting → movement → collision → cleanup
- *        Each system reads state, computes changes, dispatches actions.
- *     4. Run renderSystem — copies entity positions onto Three.js meshes
- *        and calls renderer.render(scene, camera).
- * ----------------------------------------------------------------------------- */
+ *   - Reducer logic, systems, rendering (all live behind the callback)
+ * ============================================================================= */
 
-import { dispatch, getState } from "./gameStore";
-import { shootingSystem } from "@/systems/shootingSystem";
-import { movementSystem } from "@/systems/movementSystem";
-import { cleanupSystem } from "@/systems/cleanupSystem";
-import { waveSystem } from "@/systems/waveSystem";
-import { spawnSystem } from "@/systems/spawnSystem";
-import { collisionSystem } from "@/systems/collisionSystem";
-import { renderSystem, type RenderContext } from "@/systems/renderSystem";
+import { MAX_DELTA } from "@/core/constants";
 
-let rafId = 0;
-let lastTime = 0;
+export interface GameLoop {
+  start: () => void;
+  stop: () => void;
+}
 
-/**
- * Start the loop. Returns a stop() function.
- *
- * `ctx` carries the Three.js objects needed by `renderSystem` (renderer,
- * scene, camera). They live in `src/lib/threeSetup.ts` and are passed in
- * by `GameCanvas.tsx` — the loop itself stays decoupled from Three.js.
- */
-export function startGameLoop(ctx: RenderContext): () => void {
-  lastTime = performance.now();
+export function createGameLoop(frame: (dt: number) => void): GameLoop {
+  let rafId = 0;
+  let last = 0;
+  let running = false;
 
-  const frame = (now: number) => {
-    const dt = now - lastTime;
-    lastTime = now;
-
-    const phase = getState().phase;
-
-    // --- Simulation: skip when paused / not playing -------------------------
-    if (phase === "playing") {
-      dispatch({ type: "TICK", dt });
-
-      // ORDER MATTERS. Comment lines below to debug a specific system.
-      waveSystem(dt);       // decide WHEN/WHAT new enemies should appear
-      spawnSystem(dt);      // drain spawn queue → create entities
-      shootingSystem(dt);   // mouse click → new bullet (parabolic launch)
-      movementSystem(dt);   // integrate velocity + steer enemies + gravity
-      collisionSystem(dt);  // bullet ↔ enemy hits → mark dying + score
-      cleanupSystem(dt);    // tick dying timers, retire bullets/corpses
-    }
-
-    // --- Render runs every frame, even when paused, so the scene stays drawn.
-    renderSystem(ctx);
-
-    rafId = requestAnimationFrame(frame);
+  const tick = (now: number) => {
+    if (!running) return;
+    const dt = Math.min((now - last) / 1000, MAX_DELTA);
+    last = now;
+    frame(dt);
+    rafId = requestAnimationFrame(tick);
   };
 
-  rafId = requestAnimationFrame(frame);
-  return () => cancelAnimationFrame(rafId);
+  return {
+    start() {
+      if (running) return;
+      running = true;
+      last = performance.now();
+      rafId = requestAnimationFrame(tick);
+    },
+    stop() {
+      running = false;
+      cancelAnimationFrame(rafId);
+    },
+  };
 }

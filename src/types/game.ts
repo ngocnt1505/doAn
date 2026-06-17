@@ -2,67 +2,57 @@
  * src/types/game.ts
  * -----------------------------------------------------------------------------
  * RESPONSIBILITY
- *   The shape of the whole game world: every piece of information the
- *   systems need to compute the next frame. This is the single source of
- *   truth that the store holds.
+ *   The shape of the whole game world: every piece of information the systems
+ *   need to compute the next frame. This is the single source of truth that the
+ *   store holds.
  *
  * WHY IT EXISTS
- *   In a state-driven architecture, "the game" IS this object. Anything not
- *   in here is either ephemeral (key presses), derived (score from kills),
- *   or rendering-only (Three.js meshes that mirror entities).
- *
- *   Defining it as a TypeScript interface makes the contract explicit:
- *     - Reducers must produce a valid GameState
- *     - Systems receive and return a GameState
- *     - The HUD reads from a GameState
+ *   In a state-driven architecture, "the game" IS this object. Defining it as a
+ *   TypeScript interface makes the contract explicit: reducers must produce a
+ *   valid GameState, systems receive and return a GameState, the HUD reads one.
  *
  * WHAT BELONGS HERE
  *   - Top-level state interface
- *   - Lifecycle/phase enum
- *   - Input snapshot type (so systems don't poll the DOM)
+ *   - Lifecycle/status enum
  *
  * WHAT DOES NOT BELONG HERE
  *   - Action types → `actions.ts`
  *   - Entity shapes → `entity.ts`
- *   - Anything tied to a rendering library
+ *   - The initial-state factory → `src/core/state.ts`
  * ============================================================================= */
 
-import type { Entity } from "./entity";
+import type { Bullet, Enemy, WeaponLevel } from "./entity";
 
-/** Lifecycle of the game. Overlays render based on this value. */
-export type GamePhase =
-  | "idle"      // Pre-start screen. Nothing is being simulated.
-  | "playing"  // Active simulation. Systems run every frame.
-  | "paused"   // Frozen. Systems skip update; render keeps drawing.
-  | "won"      // Win condition met. Sim stops, win overlay shows.
-  | "lost";    // Lose condition met. Sim stops, lose overlay shows.
+/** Lifecycle of the game (SRS State Diagram). Overlays render from this value. */
+export type GameStatus =
+  | "idle" // Welcome screen. Nothing is simulated (SRS BR-1/BR-2).
+  | "countdown" // 3 → 2 → 1 → Ready before the first spawn (SRS FR-3).
+  | "playing" // Active simulation. Systems run every frame.
+  | "paused" // Frozen. Systems skip update; render keeps drawing (SRS FR-26).
+  | "win" // Wave 3 cleared (SRS FR-31).
+  | "lose"; // An enemy reached the house (SRS FR-29).
 
-/** Snapshot of input for one frame. Filled by `useKeyboard` etc. */
-export interface InputState {
-  forward: boolean;
-  back: boolean;
-  left: boolean;
-  right: boolean;
-  shoot: boolean;
-}
-
-/** The whole world, in one object. Reducers return a new copy of this. */
+/** The whole world, in one object. The reducer returns a new copy of this. */
 export interface GameState {
-  phase: GamePhase;
+  status: GameStatus;
 
-  /** Monotonically increasing frame counter — useful for systems & debug. */
-  tick: number;
-  /** ms since the simulation started. Drives waves, cooldowns, animations. */
-  elapsedMs: number;
-
-  /** Player score; derived from enemy kills. Kept in state for HUD reads. */
-  score: number;
-  /** Current wave number (1-indexed). Drives the spawn system difficulty. */
+  /** Current wave, 1..3 (SRS FR-21). */
   wave: number;
+  /** Active weapon; starts "basic" (SRS BR-6/BR-91). */
+  weapon: WeaponLevel;
 
-  /** All living things in the world. Order is not meaningful. */
-  entities: Entity[];
+  /** Player score, derived from kills but stored for HUD reads. */
+  score: number;
+  /** Seconds elapsed in the Playing state (SRS FR-31). */
+  elapsed: number;
+  /** Countdown value shown before the first spawn (SRS FR-3). */
+  countdown: number;
 
-  /** Latest input snapshot. Reducers/systems read from this. */
-  input: InputState;
+  /** The protected house; defeat occurs when an enemy reaches it. */
+  player: { hp: number };
+
+  /** All living monsters. Order is not meaningful. */
+  enemies: Enemy[];
+  /** All in-flight projectiles. */
+  bullets: Bullet[];
 }

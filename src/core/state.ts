@@ -2,14 +2,13 @@
  * src/core/state.ts
  * -----------------------------------------------------------------------------
  * RESPONSIBILITY
- *   Defines the INITIAL game state and small constructors that produce
- *   "blank" entities (e.g. a fresh player). It is the single starting point
- *   that the reducer falls back to on RESET.
+ *   Defines the INITIAL game state — the single "blank world" the reducer falls
+ *   back to on START_GAME / RESTART / RETURN_TO_MENU.
  *
  * WHY IT EXISTS
- *   Splitting "shape of state" (in `src/types/game.ts`) from "what state
- *   starts as" (here) keeps types reusable and lets us reset the world by
- *   simply replacing the store with `initialState()`.
+ *   Splitting "shape of state" (`src/types/game.ts`) from "what state starts as"
+ *   (here) keeps the type reusable and lets us reset the world by simply
+ *   replacing the store contents with `initialState()` (SRS BR-4/BR-103).
  *
  * WHAT BELONGS HERE
  *   - Factory functions producing fresh, valid state
@@ -17,29 +16,21 @@
  *
  * WHAT DOES NOT BELONG HERE
  *   - The reducer (action → new state) → `reducer.ts`
- *   - System logic
- *   - Three.js objects
+ *   - System logic / Three.js objects
  * ============================================================================= */
 
-import type { GameState, InputState } from "@/types/game";
-import { createPlayerEntity } from "@/entities/Player";
+import type { GameState } from "@/types/game";
+import { COUNTDOWN_SECONDS, HOUSE_MAX_HP } from "@/core/constants";
 
-/** Empty input snapshot — used as the default until a hook overwrites it. */
-export const emptyInput = (): InputState => ({
-  forward: false,
-  back: false,
-  left: false,
-  right: false,
-  shoot: false,
-});
-
-/** The state every game starts from. The reducer returns this on RESET. */
+/** The state every game starts from (SRS FR-2 Data Initialization). */
 export const initialState = (): GameState => ({
-  phase: "idle",
-  tick: 0,
-  elapsedMs: 0,
+  status: "idle",
+  wave: 1,
+  weapon: "basic",
   score: 0,
-  wave: 0,
-  entities: [createPlayerEntity()],
-  input: emptyInput(),
+  elapsed: 0,
+  countdown: COUNTDOWN_SECONDS,
+  player: { hp: HOUSE_MAX_HP },
+  enemies: [],
+  bullets: [],
 });

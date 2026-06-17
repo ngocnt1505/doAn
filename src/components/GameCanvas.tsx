@@ -1,73 +1,79 @@
+"use client";
+
 /* =============================================================================
  * src/components/GameCanvas.tsx
  * -----------------------------------------------------------------------------
  * RESPONSIBILITY
- *   Owns the <canvas> element, creates the Three.js context on mount,
- *   starts the game loop, attaches input listeners, and tears everything
- *   down cleanly on unmount.
+ *   The single bridge between React and the game. It owns the <canvas>, builds
+ *   the Three.js context and the game store once on mount, then runs the game
+ *   loop: each frame it dispatches TICK (advancing reducer-managed timers) and
+ *   renders the scene. Everything is torn down on unmount.
+ *
+ *   Input → Dispatch → Reducer → Update State → Run Systems → Render Scene
  *
  * WHY IT EXISTS
- *   This is the THIN BRIDGE between React and the rest of the architecture.
- *   It is the only React component that knows Three.js exists.
- *
- * WHAT BELONGS HERE
- *   - The <canvas> JSX
- *   - useEffect that builds `ThreeContext` and starts the loop
- *   - Hook wiring (`useGameLoop`, `useKeyboard`)
+ *   This is the THIN BRIDGE: the only React component that knows Three.js
+ *   exists. Systems (movement, spawning, collision…) will be invoked from the
+ *   frame callback in later phases, reading the latest state from the store.
  *
  * WHAT DOES NOT BELONG HERE
- *   - Gameplay logic
- *   - HUD or overlay JSX (separate components)
+ *   - Gameplay logic, HUD/overlay JSX (separate components)
  *   - Manual scene editing
  * ============================================================================= */
 
-"use client";
-
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createThreeContext, type ThreeContext } from "@/lib/threeSetup";
 import { preloadModels } from "@/lib/modelCache";
-import { useGameLoop } from "@/hooks/useGameLoop";
-import { useKeyboard } from "@/hooks/useKeyboard";
-import { useMouse } from "@/hooks/useMouse";
+import { createStore } from "@/core/gameStore";
+import { createGameLoop, type GameLoop } from "@/core/gameLoop";
 
 export default function GameCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [ctx, setCtx] = useState<ThreeContext | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Preload every .glb, THEN build the Three.js context. Loading first means
-  // the cannon, house, fences and monsters can all clone their model
-  // synchronously — no per-spawn fetch, no placeholder pop-in.
   useEffect(() => {
-    if (!canvasRef.current) return;
-    let context: ThreeContext | null = null;
-    let cancelled = false;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
+    let cancelled = false;
+    let ctx: ThreeContext | null = null;
+    let loop: GameLoop | null = null;
+    let observer: ResizeObserver | null = null;
+
+    // Load every .glb first so scenery (and later, entities) can clone from the
+    // cache synchronously — no per-spawn fetch, no model pop-in.
     preloadModels().then(() => {
       if (cancelled || !canvasRef.current) return;
-      context = createThreeContext(canvasRef.current);
-      setCtx(context);
+
+      ctx = createThreeContext(canvasRef.current);
+      const store = createStore();
+
+      const resizeToParent = () => {
+        const parent = canvasRef.current?.parentElement;
+        if (!parent || !ctx) return;
+        ctx.resize(parent.clientWidth, parent.clientHeight);
+      };
+      resizeToParent();
+
+      observer = new ResizeObserver(resizeToParent);
+      if (canvasRef.current.parentElement) {
+        observer.observe(canvasRef.current.parentElement);
+      }
+
+      loop = createGameLoop((dt) => {
+        // 1. Advance state. 2. (Systems run here in later phases.) 3. Render.
+        store.dispatch({ type: "TICK", dt });
+        ctx?.render();
+      });
+      loop.start();
     });
 
     return () => {
       cancelled = true;
-      context?.dispose();
+      loop?.stop();
+      observer?.disconnect();
+      ctx?.dispose();
     };
   }, []);
 
-  // Start the loop once the context exists.
-  useGameLoop(ctx);
-
-  // Mouse → fire-at-target. Needs ctx for the camera + ground raycast.
-  useMouse(ctx);
-
-  // Keyboard handles lifecycle shortcuts (ESC = pause). No movement keys.
-  useKeyboard();
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 h-full w-full"
-      aria-label="Game canvas"
-    />
-  );
+  return <canvas ref={canvasRef} className="h-full w-full" />;
 }

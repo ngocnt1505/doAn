@@ -1,11 +1,8 @@
-# src/assets
+# assets/
 
-Static art and audio that ships INSIDE the source tree (so it's bundled and
-versioned with the code).
+Source assets imported by the build (processed by the bundler). Runtime-loaded
+GLB models that are fetched at runtime live in `public/models/` instead.
 
-- `models/`   — glTF / OBJ meshes that entities load at runtime
-- `textures/` — image maps used by materials
-- `sounds/`  — short SFX triggered by the event bus
-
-Files large enough to bypass the bundler should live in the top-level
-`public/` directory instead (Next.js serves it as static assets).
+- `models/`   — source 3D models (.glb/.gltf)
+- `sounds/`   — sound effects / music
+- `textures/` — image textures
