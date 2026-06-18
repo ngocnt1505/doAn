@@ -18,9 +18,9 @@ import { BATTLEFIELD_HALF } from "@/core/constants";
 
 /** Adds ambient + directional sunlight to the scene. */
 export function addLighting(scene: THREE.Scene): void {
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-  const sun = new THREE.DirectionalLight(0xfff4e0, 1.1);
+  const sun = new THREE.DirectionalLight(0xfff4e0, 1.3);
   sun.position.set(18, 30, 20);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);

@@ -21,12 +21,21 @@
 export const MAX_DELTA = 1 / 15; // 66 ms
 
 /* ---------- Lifecycle ---------- */
-/** Seconds the pre-game countdown runs before the machine flips to Playing
- *  (SRS FR-3). The "3 → 2 → 1 → Ready" UI sequence is layered on top later. */
-export const COUNTDOWN_SECONDS = 3;
+/** The pre-play sequence shown one label per second (SRS FR-3 / TR-1):
+ *  "3" → "2" → "1" → "Ready". When the final label's second elapses, the machine
+ *  flips Countdown → Playing. The extra 3-second delay before the FIRST enemy
+ *  (SRS BR-23) belongs to the spawn system, not to this lifecycle countdown. */
+export const COUNTDOWN_LABELS = ["3", "2", "1", "Ready"] as const;
+
+/** Total seconds the countdown runs = one second per label. `state.countdown`
+ *  holds the seconds remaining and starts here (SRS FR-2 / FR-3). */
+export const COUNTDOWN_SECONDS = COUNTDOWN_LABELS.length;
 
 /** Starting health of the protected house; defeat is reaching it, not HP. */
 export const HOUSE_MAX_HP = 100;
+
+/** The game runs for exactly three waves (SRS BR-74); victory follows Wave 3. */
+export const TOTAL_WAVES = 3;
 
 /* ---------- World / battlefield zones ----------
  * Player-POV layout (per the design sketch):
@@ -48,20 +57,23 @@ export const HOUSE_MAX_HP = 100;
 export const YARD_DEPTH = 32;
 export const YARD_HALF_DEPTH = YARD_DEPTH / 2;
 
-/** Gap (world units) between the house's right edge and the gray weapon strip,
- *  so the house never touches it. The house extends left from here (may be cut). */
-export const HOUSE_GAP = 3;
-/** House front = defensive boundary; left edge of the gray weapon strip. */
+/** Gap (world units) between the house's right edge and the gray weapon strip.
+ *  0 = the gray strip's left edge touches the house. The house extends left from
+ *  here and may be cut off-screen. */
+export const HOUSE_GAP = 0;
+/** House front = defensive boundary; left edge of the gray weapon strip. The
+ *  house's right edge anchors here (minus HOUSE_GAP), so moving this slides the
+ *  gray strip without moving the house when HOUSE_GAP compensates. */
 export const DEFENSE_LINE_X = -20;
 /** Right edge of the gray weapon strip = left edge of the green yard. */
-export const YARD_START_X = -8;
+export const YARD_START_X = -11;
 /** Enemy spawn line = right edge of the green yard (SRS FR-9). */
 export const SPAWN_X = 26;
 /** Cannon position, inside the gray weapon strip — between house and yard. */
-export const WEAPON_X = -12;
+export const WEAPON_X = -16;
 
 /** Overall half-extent used to size the sun's shadow camera to cover the field. */
-export const BATTLEFIELD_HALF = 26;
+export const BATTLEFIELD_HALF = 50;
 
 /* ---------- Scenery tuning (safe to tweak after viewing) ---------- */
 export const GROUND_COLOR = 0x1d2a1c; // neutral base under everything
@@ -71,11 +83,11 @@ export const STRIP_COLOR = 0x6b6f76; // gray weapon zone
  *  from). If it still faces wrong, try -Math.PI / 2, Math.PI, or 0. */
 export const HOUSE_ROTATION_Y = Math.PI / 2;
 /** Yaw so the cannon faces the yard (+x). If wrong, try -Math.PI / 2 / Math.PI / 0. */
-export const WEAPON_ROTATION_Y = Math.PI / 2;
+export const WEAPON_ROTATION_Y = -Math.PI / 2;
 /** Rendered cannon size (x extent), in world units. */
-export const WEAPON_WIDTH = 4;
+export const WEAPON_WIDTH = 3;
 /** Uniform scale applied to each fence segment before it is tiled. */
-export const FENCE_SCALE = 1;
+export const FENCE_SCALE = 3;
 
 /* ---------- Camera (SRS FR-33) ---------- */
 /* Camera configuration (used to construct the Three.js perspective camera).
@@ -102,6 +114,6 @@ export const FENCE_SCALE = 1;
  *  - For cinematic shots, animate `CAMERA_POS` and `CAMERA_LOOK` together so the
  *    framing remains stable.
  */
-export const CAMERA_POS: readonly [number, number, number] = [4, 44, 34];
-export const CAMERA_LOOK: readonly [number, number, number] = [4, 6, -2];
-export const CAMERA_FOV = 50;
+export const CAMERA_POS: readonly [number, number, number] = [1, 44, 60];
+export const CAMERA_LOOK: readonly [number, number, number] = [1, 2, -2];
+export const CAMERA_FOV = 25;

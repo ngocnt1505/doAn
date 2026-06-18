@@ -33,12 +33,12 @@ export interface GroundPos {
   z: number;
 }
 
-/** A monster advancing toward the house. Extended by the Enemy system later. */
+/** A monster on the battlefield.
+ *  MILESTONE 1: position only. `type`, health and movement fields are added in
+ *  later milestones — for now we just need to place one on the map. */
 export interface Enemy {
   id: string;
-  type: EnemyType;
-  hp: number;
-  maxHp: number;
+  /** Ground position (x = width, z = depth). y is always 0 (on the ground). */
   pos: GroundPos;
 }
 

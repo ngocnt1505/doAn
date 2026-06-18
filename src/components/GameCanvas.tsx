@@ -24,11 +24,14 @@
 import { useEffect, useRef } from "react";
 import { createThreeContext, type ThreeContext } from "@/lib/threeSetup";
 import { preloadModels } from "@/lib/modelCache";
-import { createStore } from "@/core/gameStore";
+import { useGameStore } from "@/hooks/useGameStore";
 import { createGameLoop, type GameLoop } from "@/core/gameLoop";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // The store is owned by <GameStoreProvider>; the UI (HUD, overlays) shares it,
+  // so dispatching TICK here keeps everyone in sync off one source of truth.
+  const store = useGameStore();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -45,7 +48,6 @@ export default function GameCanvas() {
       if (cancelled || !canvasRef.current) return;
 
       ctx = createThreeContext(canvasRef.current);
-      const store = createStore();
 
       const resizeToParent = () => {
         const parent = canvasRef.current?.parentElement;
@@ -73,7 +75,7 @@ export default function GameCanvas() {
       observer?.disconnect();
       ctx?.dispose();
     };
-  }, []);
+  }, [store]);
 
   return <canvas ref={canvasRef} className="h-full w-full" />;
 }

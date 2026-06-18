@@ -46,9 +46,9 @@ export function createThreeContext(canvas: HTMLCanvasElement): ThreeContext {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   // --- Scene ----------------------------------------------------------------
+  // No fog: the whole yard must stay evenly lit regardless of camera distance.
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b1020);
-  scene.fog = new THREE.Fog(0x0b1020, 45, 90);
+  scene.background = new THREE.Color(0x223049);
 
   // --- Camera + world -------------------------------------------------------
   const camera = createCamera();

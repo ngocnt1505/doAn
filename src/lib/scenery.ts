@@ -148,37 +148,53 @@ function addWeapon(scene: THREE.Scene): void {
 function addFence(scene: THREE.Scene): void {
   if (!hasModel("fence")) return; // decorative; skip if unavailable
 
-  const sample = getModel("fence");
-  sample.scale.multiplyScalar(FENCE_SCALE);
-  const size = measureSize(sample);
-  const runsAlongX = size.x >= size.z;
-  const segLength = Math.max(size.x, size.z) || 4;
-  const baseYaw = runsAlongX ? 0 : Math.PI / 2;
+  // Measure one panel at the chosen scale to learn its natural length.
+  const probe = getModel("fence");
+  probe.scale.multiplyScalar(FENCE_SCALE);
+  const size = measureSize(probe);
+  const longIsX = size.x >= size.z; // which local axis the panel runs along
+  const panelLen = Math.max(size.x, size.z) || 4;
 
-  const placeSeg = (x: number, z: number, yaw: number) => {
-    const seg = getModel("fence");
-    seg.scale.multiplyScalar(FENCE_SCALE);
-    seg.rotation.y = yaw;
-    centerOnGround(seg);
-    seg.position.x += x;
-    seg.position.z += z;
-    scene.add(seg);
-  };
+  // Lay a SEAMLESS run of panels along an axis-aligned edge (x0,z0)→(x1,z1).
+  // We round to a whole number of panels, then stretch each by `cell/panelLen`
+  // so they meet exactly — no overlap, no gap, at any FENCE_SCALE.
+  const placeRun = (x0: number, z0: number, x1: number, z1: number) => {
+    const dx = x1 - x0;
+    const dz = z1 - z0;
+    const runLen = Math.hypot(dx, dz);
+    if (runLen < 1e-3) return;
 
-  const tileAlongX = (z: number, x0: number, x1: number) => {
-    const n = Math.max(1, Math.ceil((x1 - x0) / segLength));
-    const step = (x1 - x0) / n;
-    for (let i = 0; i < n; i++) placeSeg(x0 + step * (i + 0.5), z, baseYaw);
-  };
-  const tileAlongZ = (x: number, z0: number, z1: number) => {
-    const n = Math.max(1, Math.ceil((z1 - z0) / segLength));
-    const step = (z1 - z0) / n;
+    const alongX = Math.abs(dx) >= Math.abs(dz);
+    const n = Math.max(1, Math.round(runLen / panelLen));
+    const cell = runLen / n;
+    const stretch = cell / panelLen;
+    const ux = dx / runLen;
+    const uz = dz / runLen;
+    // Yaw that points the panel's long (local) axis along the run direction.
+    const yaw = alongX
+      ? longIsX
+        ? 0
+        : Math.PI / 2
+      : longIsX
+        ? -Math.PI / 2
+        : 0;
+
     for (let i = 0; i < n; i++) {
-      placeSeg(x, z0 + step * (i + 0.5), baseYaw + Math.PI / 2);
+      const t = cell * (i + 0.5);
+      const seg = getModel("fence");
+      seg.scale.multiplyScalar(FENCE_SCALE);
+      // Stretch only the long axis so the panel spans exactly one cell.
+      if (longIsX) seg.scale.x *= stretch;
+      else seg.scale.z *= stretch;
+      seg.rotation.y = yaw;
+      centerOnGround(seg);
+      seg.position.x += x0 + ux * t;
+      seg.position.z += z0 + uz * t;
+      scene.add(seg);
     }
   };
 
   // Far edge (across the field) and right edge (the spawn side).
-  tileAlongX(-YARD_HALF_DEPTH, DEFENSE_LINE_X, SPAWN_X);
-  tileAlongZ(SPAWN_X, -YARD_HALF_DEPTH, YARD_HALF_DEPTH);
+  placeRun(DEFENSE_LINE_X, -YARD_HALF_DEPTH, SPAWN_X, -YARD_HALF_DEPTH);
+  placeRun(SPAWN_X, -YARD_HALF_DEPTH, SPAWN_X, YARD_HALF_DEPTH);
 }
