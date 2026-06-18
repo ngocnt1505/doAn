@@ -18,6 +18,8 @@
  *   - Transient inter-system notifications → `src/core/eventBus.ts`
  * ============================================================================= */
 
+import type { Enemy } from "./entity";
+
 /* ---------- Lifecycle actions (SRS State Diagram) ---------- */
 interface StartGameAction { type: "START_GAME"; } // idle → countdown
 interface BeginPlayAction { type: "BEGIN_PLAY"; } // countdown → playing
@@ -32,6 +34,20 @@ interface ReturnToMenuAction { type: "RETURN_TO_MENU"; } // any → idle (fresh)
 /** Advances time by `dt` (seconds). Dispatched once per animation frame. */
 interface TickAction { type: "TICK"; dt: number; }
 
+/* ---------- Enemy actions (Milestone 3 spawn system) ---------- */
+/** Append a fully-built enemy to the world. */
+interface SpawnEnemyAction { type: "SPAWN_ENEMY"; enemy: Enemy; }
+/** Remove an enemy by id. */
+interface RemoveEnemyAction { type: "REMOVE_ENEMY"; id: string; }
+
+/* ---------- Enemy actions (Milestone 4 movement) ---------- */
+/** Advance all enemies toward the house by `dt` seconds. */
+interface MoveEnemiesAction { type: "MOVE_ENEMIES"; dt: number; }
+
+/* ---------- Enemy actions (Milestone 6 health) ---------- */
+/** Deal `amount` damage to one enemy (SRS FR-11). */
+interface DamageEnemyAction { type: "DAMAGE_ENEMY"; id: string; amount: number; }
+
 /* ---------- The union ---------- */
 /** Exhaustive union of all legal actions. TypeScript warns if the reducer
  *  forgets one. Gameplay actions (SPAWN, FIRE, APPLY_DAMAGE…) arrive later. */
@@ -44,4 +60,8 @@ export type GameAction =
   | LoseAction
   | RestartAction
   | ReturnToMenuAction
-  | TickAction;
+  | TickAction
+  | SpawnEnemyAction
+  | RemoveEnemyAction
+  | MoveEnemiesAction
+  | DamageEnemyAction;

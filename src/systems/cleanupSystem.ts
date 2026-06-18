@@ -2,14 +2,17 @@
  * src/systems/cleanupSystem.ts
  * -----------------------------------------------------------------------------
  * RESPONSIBILITY
- *   Removes dead enemies and expired bullets from state (SRS FR-39).
+ *   Remove entities that have left play. Milestone 6: drop destroyed enemies
+ *   (state === "dead") so they stop participating in updates (SRS BR-127/BR-129).
  *
- * STATUS: documented stub — implemented in a later phase.
+ *   NOTE: removal is immediate for now (no death animation). When a death
+ *   animation is added, hold the "dead" enemy until the clip finishes before
+ *   removing it.
  * ============================================================================= */
 
-import type { GameState } from "@/types/game";
+import type { Enemy } from "@/types/entity";
 
-export function cleanupSystem(state: GameState, _dt: number): GameState {
-  // TODO: implemented in a later phase.
-  return state;
+/** Keep only living enemies (drop the destroyed ones). */
+export function removeDead(enemies: Enemy[]): Enemy[] {
+  return enemies.filter((enemy) => enemy.state !== "dead");
 }

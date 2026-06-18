@@ -21,6 +21,8 @@
 import type { GameAction } from "@/types/actions";
 import type { GameState } from "@/types/game";
 import { initialState } from "@/core/state";
+import { moveEnemies } from "@/systems/movementSystem";
+import { advanceEnemyStates } from "@/systems/enemyState";
 
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -52,6 +54,40 @@ export function reducer(state: GameState, action: GameAction): GameState {
 
     case "RETURN_TO_MENU":
       return initialState();
+
+    case "SPAWN_ENEMY":
+      // Append a new enemy to the world (Milestone 3 spawn system).
+      return { ...state, enemies: [...state.enemies, action.enemy] };
+
+    case "REMOVE_ENEMY":
+      return {
+        ...state,
+        enemies: state.enemies.filter((e) => e.id !== action.id),
+      };
+
+    case "MOVE_ENEMIES": {
+      // Per-frame enemy update: advance the state machine (SPAWNING → MOVING)
+      // then move the MOVING ones. DEAD enemies stay in state (frozen) so the
+      // renderer can play their fall animation; they're removed via REMOVE_ENEMY
+      // once that finishes. Gated to Playing so movement freezes on Pause / win /
+      // lose (SRS FR-26 / BR-96: no gameplay updates while paused).
+      if (state.status !== "playing" || state.enemies.length === 0) return state;
+      const enemies = moveEnemies(advanceEnemyStates(state.enemies), action.dt);
+      return { ...state, enemies };
+    }
+
+    case "DAMAGE_ENEMY": {
+      // SRS BR-31 (lose health), BR-32 (clamp 0..max), BR-33 (destroy at 0).
+      let changed = false;
+      const enemies = state.enemies.map((e) => {
+        if (e.id !== action.id || e.state === "dead") return e;
+        changed = true;
+        const health = Math.max(0, Math.min(e.maxHealth, e.health - action.amount));
+        const state = health <= 0 ? ("dead" as const) : e.state;
+        return { ...e, health, state };
+      });
+      return changed ? { ...state, enemies } : state;
+    }
 
     case "TICK": {
       // Time only advances during the countdown and active play.

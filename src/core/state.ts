@@ -31,6 +31,7 @@ export const initialState = (): GameState => ({
   elapsed: 0,
   countdown: COUNTDOWN_SECONDS,
   player: { hp: HOUSE_MAX_HP },
+  // Enemies are created by the spawn system (Milestone 3), not seeded here.
   enemies: [],
   bullets: [],
 });
