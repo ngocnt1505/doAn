@@ -34,4 +34,6 @@ export const initialState = (): GameState => ({
   // Enemies are created by the spawn system (Milestone 3), not seeded here.
   enemies: [],
   bullets: [],
+  // No target chosen until the player clicks the ground (SRS FR-15).
+  marker: null,
 });

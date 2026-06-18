@@ -18,7 +18,7 @@
  *   - Transient inter-system notifications → `src/core/eventBus.ts`
  * ============================================================================= */
 
-import type { Enemy } from "./entity";
+import type { Bullet, Enemy, GroundPos } from "./entity";
 
 /* ---------- Lifecycle actions (SRS State Diagram) ---------- */
 interface StartGameAction { type: "START_GAME"; } // idle → countdown
@@ -48,6 +48,16 @@ interface MoveEnemiesAction { type: "MOVE_ENEMIES"; dt: number; }
 /** Deal `amount` damage to one enemy (SRS FR-11). */
 interface DamageEnemyAction { type: "DAMAGE_ENEMY"; id: string; amount: number; }
 
+/* ---------- Shooting actions (Phase 5) ---------- */
+/** Set/move the target marker to a clicked ground position (SRS FR-15). */
+interface SetTargetAction { type: "SET_TARGET"; pos: GroundPos; }
+/** Clear the target marker — e.g. the moment a bullet reaches it (M9). */
+interface ClearTargetAction { type: "CLEAR_TARGET"; }
+/** Spawn a projectile (M5). */
+interface FireBulletAction { type: "FIRE_BULLET"; bullet: Bullet; }
+/** Advance all bullets along their arc by `dt` seconds (M7/M8). */
+interface MoveBulletsAction { type: "MOVE_BULLETS"; dt: number; }
+
 /* ---------- The union ---------- */
 /** Exhaustive union of all legal actions. TypeScript warns if the reducer
  *  forgets one. Gameplay actions (SPAWN, FIRE, APPLY_DAMAGE…) arrive later. */
@@ -64,4 +74,8 @@ export type GameAction =
   | SpawnEnemyAction
   | RemoveEnemyAction
   | MoveEnemiesAction
-  | DamageEnemyAction;
+  | DamageEnemyAction
+  | SetTargetAction
+  | ClearTargetAction
+  | FireBulletAction
+  | MoveBulletsAction;

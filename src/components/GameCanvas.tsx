@@ -26,9 +26,22 @@ import { createThreeContext, type ThreeContext } from "@/lib/threeSetup";
 import { preloadModels } from "@/lib/modelCache";
 import { useGameStore } from "@/hooks/useGameStore";
 import { createGameLoop, type GameLoop } from "@/core/gameLoop";
-import { createEnemyRenderer, type EnemyRenderer } from "@/systems/renderSystem";
+import {
+  createBulletRenderer,
+  createEnemyRenderer,
+  createTargetMarkerRenderer,
+  type BulletRenderer,
+  type EnemyRenderer,
+  type TargetMarkerRenderer,
+} from "@/systems/renderSystem";
 import { createEnemyManager } from "@/systems/enemyManager";
 import { createSpawnScheduler } from "@/systems/spawnSystem";
+import { createMouseInputSystem } from "@/systems/mouseInputSystem";
+import { createGroundPicker } from "@/lib/raycasting";
+import { createEventBus } from "@/core/eventBus";
+import { createShootController, isInsideYard } from "@/systems/shootingSystem";
+import { createBullet } from "@/entities/Bullet";
+import { BULLET_FLIGHT_TIME, WEAPON_ORIGIN } from "@/core/constants";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -45,6 +58,37 @@ export default function GameCanvas() {
     let loop: GameLoop | null = null;
     let observer: ResizeObserver | null = null;
     let enemyRenderer: EnemyRenderer | null = null;
+    let markerRenderer: TargetMarkerRenderer | null = null;
+    let bulletRenderer: BulletRenderer | null = null;
+    let detachClick: (() => void) | null = null;
+
+    // M4/M5 — a click broadcasts a `shoot:requested` event; on it we (M4) log the
+    // request and (M5) spawn a bullet at the cannon muzzle. The bullet just sits
+    // there for now — the trajectory milestone will move it to the target.
+    const bus = createEventBus();
+    const unsubShoot = bus.on("shoot:requested", ({ target }) => {
+      console.log(
+        `Shoot requested: Target = (${target.x.toFixed(0)}, 0, ${target.z.toFixed(0)})`,
+      );
+      store.dispatch({
+        type: "FIRE_BULLET",
+        bullet: createBullet(WEAPON_ORIGIN, { x: target.x, y: 0, z: target.z }),
+      });
+    });
+    const shootController = createShootController(bus);
+
+    // M9 — Impact Detection: confirm each bullet's arrival once. `impacted` guards
+    // against re-firing the event on later frames while the bullet lingers.
+    const impacted = new Set<string>();
+    const unsubImpact = bus.on("bullet:impact", ({ x, z }) => {
+      console.log(`Bullet impact at (${x.toFixed(0)}, 0, ${z.toFixed(0)})`);
+    });
+
+    // M1 — Mouse Position Detection: tracks the cursor's position over the canvas
+    // (available via mouseInput.getPosition()). The per-move console readout is
+    // off now that M2+ use the click position directly.
+    const mouseInput = createMouseInputSystem();
+    mouseInput.attach(canvas);
 
     // Load every .glb first so scenery (and later, entities) can clone from the
     // cache synchronously — no per-spawn fetch, no model pop-in.
@@ -71,6 +115,36 @@ export default function GameCanvas() {
         store.dispatch({ type: "REMOVE_ENEMY", id }),
       );
 
+      // M2 raycast + M3 marker + M4 shoot: on left-click, cast the cursor onto
+      // the ground plane (M2); if it hits, drop/move the "X" target (M3, via
+      // SET_TARGET) and issue a shoot request (M4, ShootEvent on the bus). No
+      // yard-bounds check or bullet yet — those are later milestones.
+      const picker = createGroundPicker(ctx.camera);
+      markerRenderer = createTargetMarkerRenderer(ctx.scene);
+      bulletRenderer = createBulletRenderer(ctx.scene);
+      const handleClick = (event: PointerEvent) => {
+        const c = canvasRef.current;
+        if (event.button !== 0 || !c) return; // left button only (SRS FR-15)
+        const rect = c.getBoundingClientRect();
+        const hit = picker.pickGround(
+          event.clientX - rect.left,
+          event.clientY - rect.top,
+          rect.width,
+          rect.height,
+        );
+        if (!hit) return; // ray missed the ground plane
+        const target = { x: hit.x, z: hit.z };
+        // Yard restriction (SRS FR-7 / BR-14/15/50/51): only clicks inside the
+        // green yard are valid — outside it, no marker and no shot.
+        if (!isInsideYard(target)) return;
+        store.dispatch({ type: "SET_TARGET", pos: target }); // M3: marker
+        shootController.requestShoot(target); // M4: shoot event
+      };
+      const clickTarget = canvasRef.current;
+      clickTarget.addEventListener("pointerdown", handleClick);
+      detachClick = () =>
+        clickTarget.removeEventListener("pointerdown", handleClick);
+
       // FR-21/FR-22: schedules the current wave's enemies (per-type intervals,
       // sequential, first ~3s after "Ready", stops when the roster is created).
       // Spawning freezes when the game isn't Playing.
@@ -93,15 +167,36 @@ export default function GameCanvas() {
         // scheduling, movement, and (temp) damage freeze on Pause / win / lose.
         spawnScheduler.update(dt, s.wave, s.status); // pause-safe internally
         store.dispatch({ type: "MOVE_ENEMIES", dt }); // reducer gates to Playing
+        store.dispatch({ type: "MOVE_BULLETS", dt }); // arc toward target (M7/M8)
         if (DEBUG_AUTO_DAMAGE && playing) {
           for (const e of store.getState().enemies) {
             store.dispatch({ type: "DAMAGE_ENEMY", id: e.id, amount: DEBUG_DPS * dt });
           }
         }
 
+        // M9 — Impact Detection: the first frame a bullet reaches its target,
+        // broadcast the impact (once) and hide the "X" immediately. The bullet
+        // itself is destroyed by the movement system 1 s later (the linger).
+        const bullets = store.getState().bullets;
+        const liveBullets = new Set<string>();
+        for (const b of bullets) {
+          liveBullets.add(b.id);
+          if (b.elapsed >= BULLET_FLIGHT_TIME && !impacted.has(b.id)) {
+            impacted.add(b.id);
+            bus.emit("bullet:impact", { bulletId: b.id, x: b.target.x, z: b.target.z });
+            store.dispatch({ type: "CLEAR_TARGET" }); // X disappears on arrival
+          }
+        }
+        for (const id of impacted) if (!liveBullets.has(id)) impacted.delete(id);
+
         // Render every frame so the scene + overlays stay drawn (BR-98), but feed
         // the renderer dt = 0 when not Playing so animations / death timers freeze.
         enemyRenderer?.sync(store.getState().enemies, playing ? dt : 0);
+        // The "X" target follows state.marker; always synced so it stays put
+        // regardless of pause/win/lose (it's a UI cue, not a simulated entity).
+        markerRenderer?.sync(store.getState().marker);
+        // Bullets render every frame too; they hold still until trajectory (later).
+        bulletRenderer?.sync(store.getState().bullets);
         ctx?.render();
       });
       loop.start();
@@ -109,9 +204,15 @@ export default function GameCanvas() {
 
     return () => {
       cancelled = true;
+      mouseInput.detach();
+      detachClick?.();
+      unsubShoot();
+      unsubImpact();
       loop?.stop();
       observer?.disconnect();
       enemyRenderer?.dispose();
+      markerRenderer?.dispose();
+      bulletRenderer?.dispose();
       ctx?.dispose();
     };
   }, [store]);

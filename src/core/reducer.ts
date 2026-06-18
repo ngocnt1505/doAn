@@ -22,7 +22,9 @@ import type { GameAction } from "@/types/actions";
 import type { GameState } from "@/types/game";
 import { initialState } from "@/core/state";
 import { moveEnemies } from "@/systems/movementSystem";
+import { moveBullets } from "@/systems/bulletSystem";
 import { advanceEnemyStates } from "@/systems/enemyState";
+import { createTargetMarker } from "@/entities/TargetMarker";
 
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -87,6 +89,25 @@ export function reducer(state: GameState, action: GameAction): GameState {
         return { ...e, health, state };
       });
       return changed ? { ...state, enemies } : state;
+    }
+
+    case "SET_TARGET":
+      // Drop (or move) the single "X" target the player clicked (SRS FR-15).
+      return { ...state, marker: createTargetMarker(action.pos) };
+
+    case "CLEAR_TARGET":
+      // Hide the "X" — used the instant a bullet reaches it (M9).
+      return state.marker ? { ...state, marker: null } : state;
+
+    case "FIRE_BULLET":
+      // Add a projectile to the world (M5). The movement system flies it.
+      return { ...state, bullets: [...state.bullets, action.bullet] };
+
+    case "MOVE_BULLETS": {
+      // Advance bullets along their arc (M7/M8). Gated to Playing so projectiles
+      // freeze on pause / win / lose (SRS FR-26 / BR-96).
+      if (state.status !== "playing" || state.bullets.length === 0) return state;
+      return { ...state, bullets: moveBullets(state.bullets, action.dt) };
     }
 
     case "TICK": {

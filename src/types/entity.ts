@@ -37,6 +37,13 @@ export interface GroundPos {
   z: number;
 }
 
+/** A full 3D world position (plain data — no Three.js, so state stays cloneable). */
+export interface Vec3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
 /** A monster on the battlefield.
  *  MILESTONE 3: id + difficulty type + position. Health and movement fields are
  *  added in later milestones. */
@@ -56,12 +63,24 @@ export interface Enemy {
   targetZ: number;
 }
 
-/** A projectile travelling along a ballistic arc to a clicked target. */
+/** The single "X" the player drops by clicking — the chosen target location
+ *  (SRS FR-15 step 5/6). Stored in state; the renderer mirrors it to the scene. */
+export interface TargetMarker {
+  /** Ground position the marker sits on. */
+  pos: GroundPos;
+}
+
+/** A projectile fired by the weapon. It flies a ballistic arc from the muzzle to
+ *  the clicked target over a fixed flight time (Phase 5 · M7/M8). Damage is added
+ *  in a later milestone. */
 export interface Bullet {
   id: string;
-  origin: GroundPos;
-  target: GroundPos;
-  /** 0 → 1 progress along the arc; impact resolves at 1 (SRS FR-37). */
-  t: number;
-  damage: number;
+  /** Launch point — the weapon muzzle (SRS BR-55). */
+  origin: Vec3;
+  /** Landing point — the clicked target on the ground (SRS BR-56/60). */
+  target: Vec3;
+  /** Current world position, updated each frame by the movement system. */
+  position: Vec3;
+  /** Seconds since launch; the flight completes at BULLET_FLIGHT_TIME. */
+  elapsed: number;
 }

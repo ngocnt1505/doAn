@@ -18,8 +18,14 @@
  *   - Anything that persists across frames — put it in the store
  * ============================================================================= */
 
+import type { GroundPos } from "@/types/entity";
+
 /** Catalogue of events and their payload shapes. Grows with the game. */
 export interface GameEvents {
+  /** Phase 5 · M4 — a shot was requested at a ground target (no bullet yet). */
+  "shoot:requested": { target: GroundPos };
+  /** Phase 5 · M9 — a bullet reached its target (no enemy damage yet). */
+  "bullet:impact": { bulletId: string; x: number; z: number };
   "enemy:killed": { enemyId: string };
   "bullet:hit": { bulletId: string; x: number; z: number };
   "wave:complete": { wave: number };

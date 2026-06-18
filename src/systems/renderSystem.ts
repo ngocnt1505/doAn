@@ -17,7 +17,7 @@
  * ============================================================================= */
 
 import * as THREE from "three";
-import type { Enemy, EnemyType } from "@/types/entity";
+import type { Bullet, Enemy, EnemyType, TargetMarker } from "@/types/entity";
 import type { ModelKey } from "@/lib/models";
 import { getAnimations, getModel, hasModel } from "@/lib/modelCache";
 
@@ -176,6 +176,140 @@ export function createEnemyRenderer(
     dispose() {
       for (const view of views.values()) disposeView(view);
       views.clear();
+    },
+  };
+}
+
+/* =============================================================================
+ * Phase 5 · Milestone 3 — Target Marker (renderer).
+ *   Mirrors `state.marker` onto a single on-ground "X" (SRS FR-15 step 6). One
+ *   reusable object: shown + repositioned when a marker exists, hidden when not.
+ * ============================================================================= */
+
+/** Slightly above the floor planes so the X never z-fights with the ground. */
+const MARKER_Y = 0.06;
+/** Half-length of each arm of the X, in world units. */
+const MARKER_ARM = 1.4;
+/** Thickness of the X's bars. */
+const MARKER_BAR = 0.28;
+const MARKER_COLOR = 0xff3b3b;
+
+export interface TargetMarkerRenderer {
+  /** Show/move the X to `marker`, or hide it when `marker` is null. */
+  sync: (marker: TargetMarker | null) => void;
+  /** Remove and dispose the marker object. Call on unmount. */
+  dispose: () => void;
+}
+
+/** Build a flat red "X" (two crossed bars lying on the XZ plane). */
+function buildMarkerMesh(): THREE.Group {
+  const group = new THREE.Group();
+  const material = new THREE.MeshBasicMaterial({ color: MARKER_COLOR });
+  // Bars run along x; rotating ±45° about y crosses them into an X on the ground.
+  for (const yaw of [Math.PI / 4, -Math.PI / 4]) {
+    const bar = new THREE.Mesh(
+      new THREE.BoxGeometry(MARKER_ARM * 2, MARKER_BAR, MARKER_BAR),
+      material,
+    );
+    bar.rotation.y = yaw;
+    group.add(bar);
+  }
+  return group;
+}
+
+export function createTargetMarkerRenderer(
+  scene: THREE.Scene,
+): TargetMarkerRenderer {
+  const marker = buildMarkerMesh();
+  marker.visible = false; // nothing to show until the first click
+  scene.add(marker);
+
+  return {
+    sync(target) {
+      if (!target) {
+        marker.visible = false;
+        return;
+      }
+      marker.visible = true;
+      marker.position.set(target.pos.x, MARKER_Y, target.pos.z);
+    },
+    dispose() {
+      scene.remove(marker);
+      marker.traverse((o) => {
+        if (o instanceof THREE.Mesh) {
+          o.geometry.dispose();
+          (o.material as THREE.Material).dispose();
+        }
+      });
+    },
+  };
+}
+
+/* =============================================================================
+ * Phase 5 · Milestone 6 — Bullet rendering.
+ *   Mirrors `state.bullets` onto cannonball meshes (one per id). Each frame: add
+ *   a sphere for any new bullet, move every sphere to its bullet's position, and
+ *   reap spheres whose bullet left state. No animation/movement here — bullets
+ *   hold still until the trajectory milestone advances their position.
+ * ============================================================================= */
+
+/** Cannonball radius, world units. */
+const BULLET_RADIUS = 0.4;
+const BULLET_COLOR = 0x222428;
+
+export interface BulletRenderer {
+  /** Reconcile cannonball meshes with the current bullets. */
+  sync: (bullets: Bullet[]) => void;
+  /** Remove and dispose every bullet mesh. Call on unmount. */
+  dispose: () => void;
+}
+
+/** A dark metallic sphere — the cannonball. */
+function buildBulletMesh(): THREE.Mesh {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(BULLET_RADIUS, 16, 16),
+    new THREE.MeshStandardMaterial({
+      color: BULLET_COLOR,
+      roughness: 0.35,
+      metalness: 0.7,
+    }),
+  );
+  mesh.castShadow = true;
+  return mesh;
+}
+
+export function createBulletRenderer(scene: THREE.Scene): BulletRenderer {
+  const meshes = new Map<string, THREE.Mesh>();
+
+  function disposeMesh(mesh: THREE.Mesh): void {
+    scene.remove(mesh);
+    mesh.geometry.dispose();
+    (mesh.material as THREE.Material).dispose();
+  }
+
+  return {
+    sync(bullets) {
+      const live = new Set<string>();
+      for (const bullet of bullets) {
+        live.add(bullet.id);
+        let mesh = meshes.get(bullet.id);
+        if (!mesh) {
+          mesh = buildBulletMesh();
+          scene.add(mesh);
+          meshes.set(bullet.id, mesh);
+        }
+        mesh.position.set(bullet.position.x, bullet.position.y, bullet.position.z);
+      }
+      for (const [id, mesh] of meshes) {
+        if (!live.has(id)) {
+          disposeMesh(mesh);
+          meshes.delete(id);
+        }
+      }
+    },
+    dispose() {
+      for (const mesh of meshes.values()) disposeMesh(mesh);
+      meshes.clear();
     },
   };
 }

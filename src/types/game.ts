@@ -21,7 +21,7 @@
  *   - The initial-state factory → `src/core/state.ts`
  * ============================================================================= */
 
-import type { Bullet, Enemy, WeaponLevel } from "./entity";
+import type { Bullet, Enemy, TargetMarker, WeaponLevel } from "./entity";
 
 /** Lifecycle of the game (SRS State Diagram). Overlays render from this value. */
 export type GameStatus =
@@ -55,4 +55,8 @@ export interface GameState {
   enemies: Enemy[];
   /** All in-flight projectiles. */
   bullets: Bullet[];
+
+  /** The current "X" target the player last clicked, or null if none yet
+   *  (SRS FR-15). The renderer mirrors it to the scene. */
+  marker: TargetMarker | null;
 }

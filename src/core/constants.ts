@@ -71,6 +71,25 @@ export const YARD_START_X = -11;
 export const SPAWN_X = 26;
 /** Cannon position, inside the gray weapon strip — between house and yard. */
 export const WEAPON_X = -16;
+/** Muzzle height (world units) where projectiles are born — roughly the cannon's
+ *  mouth, so a bullet appears at the barrel rather than on the floor. */
+export const MUZZLE_Y = 1.4;
+/** Projectile birth point (SRS BR-55: the weapon position). Sits OUTSIDE the
+ *  green yard, in the gray strip. */
+export const WEAPON_ORIGIN = { x: WEAPON_X, y: MUZZLE_Y, z: 0 } as const;
+
+/* ---------- Projectile flight (SRS FR-17 / FR-36) ---------- */
+/** Seconds a projectile takes to fly from the cannon to its target. Single value
+ *  for now; per-weapon travel times (Basic slow → Advanced fast) come later. */
+export const BULLET_FLIGHT_TIME = 1.1;
+/** Downward gravity for the ballistic arc (world units / s²). More negative = a
+ *  flatter, harder-falling arc; less negative = a higher lob. */
+export const BULLET_GRAVITY = -22;
+/** Seconds a landed bullet lingers on the target before it's destroyed (M9). */
+export const BULLET_LINGER = 1;
+/** A bullet's full lifetime (flight + linger). It's removed at this age — i.e.
+ *  1 s after it lands (SRS FR-39 entity cleanup; M9 Bullet Destroy). */
+export const BULLET_REMOVE_TIME = BULLET_FLIGHT_TIME + BULLET_LINGER;
 
 /** Overall half-extent used to size the sun's shadow camera to cover the field. */
 export const BATTLEFIELD_HALF = 50;
@@ -85,7 +104,7 @@ export const HOUSE_ROTATION_Y = Math.PI / 2;
 /** Yaw so the cannon faces the yard (+x). If wrong, try -Math.PI / 2 / Math.PI / 0. */
 export const WEAPON_ROTATION_Y = -Math.PI / 2;
 /** Rendered cannon size (x extent), in world units. */
-export const WEAPON_WIDTH = 3;
+export const WEAPON_WIDTH = 2.5;
 /** Uniform scale applied to each fence segment before it is tiled. */
 export const FENCE_SCALE = 3;
 
