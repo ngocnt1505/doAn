@@ -17,9 +17,12 @@
  * ============================================================================= */
 
 import * as THREE from "three";
-import type { Bullet, Enemy, EnemyType, TargetMarker } from "@/types/entity";
+import type { Bullet, Enemy, EnemyType, TargetMarker, WeaponLevel } from "@/types/entity";
 import type { ModelKey } from "@/lib/models";
 import { getAnimations, getModel, hasModel } from "@/lib/modelCache";
+import { centerOnGround, scaleToExtent } from "@/lib/helpers";
+import { WEAPON_ROTATION_Y, WEAPON_WIDTH, WEAPON_X } from "@/core/constants";
+import { WEAPON_ORDER } from "@/core/weapons";
 
 /** Each enemy type renders with its own GLB (skeleton / zombie / big-arm — see
  *  the GLB asset mapping). Clips are still selected by NAME per model. */
@@ -310,6 +313,81 @@ export function createBulletRenderer(scene: THREE.Scene): BulletRenderer {
     dispose() {
       for (const mesh of meshes.values()) disposeMesh(mesh);
       meshes.clear();
+    },
+  };
+}
+
+/* =============================================================================
+ * Phase 7 — Weapon (cannon) rendering.
+ *   The player owns ONE cannon at a time (SRS): the active weapon's model is
+ *   shown in the gray strip, the other two stay hidden. All three GLBs are built
+ *   once (so a weapon swap is instant, no pop-in) and toggled by `sync(weapon)`.
+ *   Replaces the static cannon that scenery used to add, so the rendered cannon
+ *   tracks weapon progression (SRS FR-25, BR-94 deviation: the player chooses).
+ * ============================================================================= */
+
+const WEAPON_MODEL_KEY: Record<WeaponLevel, ModelKey> = {
+  basic: "weaponBasic",
+  medium: "weaponMedium",
+  advanced: "weaponAdvanced",
+};
+
+export interface WeaponRenderer {
+  /** Show the active weapon's cannon; hide the others. */
+  sync: (weapon: WeaponLevel) => void;
+  /** Remove and dispose every cannon object. Call on unmount. */
+  dispose: () => void;
+}
+
+/** Build the cannon for one weapon level (GLB from cache, or a fallback box). */
+function buildCannon(level: WeaponLevel): THREE.Object3D {
+  const key = WEAPON_MODEL_KEY[level];
+  if (hasModel(key)) {
+    const cannon = getModel(key);
+    scaleToExtent(cannon, WEAPON_WIDTH, "x");
+    cannon.rotation.y = WEAPON_ROTATION_Y;
+    centerOnGround(cannon);
+    cannon.position.x += WEAPON_X;
+    cannon.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.castShadow = true;
+    });
+    return cannon;
+  }
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 1.2, 2),
+    new THREE.MeshStandardMaterial({ color: 0x444a52, roughness: 0.6 }),
+  );
+  box.position.set(WEAPON_X, 0.6, 0);
+  box.castShadow = true;
+  return box;
+}
+
+export function createWeaponRenderer(scene: THREE.Scene): WeaponRenderer {
+  const cannons = new Map<WeaponLevel, THREE.Object3D>();
+  for (const level of WEAPON_ORDER) {
+    const cannon = buildCannon(level);
+    cannon.visible = false; // sync() reveals the active one on the first frame
+    scene.add(cannon);
+    cannons.set(level, cannon);
+  }
+
+  return {
+    sync(weapon) {
+      for (const [level, cannon] of cannons) cannon.visible = level === weapon;
+    },
+    dispose() {
+      for (const cannon of cannons.values()) {
+        scene.remove(cannon);
+        cannon.traverse((o) => {
+          if (o instanceof THREE.Mesh) {
+            o.geometry.dispose();
+            const mat = o.material as THREE.Material | THREE.Material[];
+            if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+            else mat.dispose();
+          }
+        });
+      }
+      cannons.clear();
     },
   };
 }

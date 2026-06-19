@@ -11,10 +11,10 @@
 
 import Button from "@/components/ui/Button";
 import Panel from "@/components/ui/Panel";
-import { useGameState, useGameStore } from "@/hooks/useGameStore";
+import { useGameStatus, useGameStore } from "@/hooks/useGameStore";
 
 export default function WinScreen() {
-  const { status, score } = useGameState();
+  const status = useGameStatus();
   const { dispatch } = useGameStore();
 
   if (status !== "win") return null;
@@ -26,7 +26,7 @@ export default function WinScreen() {
           Victory!
         </h2>
         <p className="mb-8 text-zinc-300">
-          You defended the house through all three waves. Final score: {score}.
+          You defended the house through all three waves.
         </p>
         <Button onClick={() => dispatch({ type: "RETURN_TO_MENU" })}>
           Return to Start Page

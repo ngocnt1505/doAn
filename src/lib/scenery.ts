@@ -24,9 +24,6 @@ import {
   HOUSE_ROTATION_Y,
   SPAWN_X,
   STRIP_COLOR,
-  WEAPON_ROTATION_Y,
-  WEAPON_WIDTH,
-  WEAPON_X,
   YARD_COLOR,
   YARD_DEPTH,
   YARD_HALF_DEPTH,
@@ -35,11 +32,12 @@ import {
 import { getModel, hasModel } from "@/lib/modelCache";
 import { centerOnGround, measureSize, scaleToExtent } from "@/lib/helpers";
 
-/** Adds ground, zones, house, weapon and fence to the scene (SRS FR-5). */
+/** Adds ground, zones, house and fence to the scene (SRS FR-5). The player's
+ *  cannon is NOT added here — it changes with weapon progression, so the weapon
+ *  renderer (renderSystem) owns it. */
 export function addScenery(scene: THREE.Scene): void {
   addGround(scene);
   addHouse(scene);
-  addWeapon(scene);
   addFence(scene);
 }
 
@@ -120,28 +118,6 @@ function addHouse(scene: THREE.Scene): void {
   }
 
   scene.add(house);
-}
-
-/** The player's cannon, parked in the gray strip between house and yard. */
-function addWeapon(scene: THREE.Scene): void {
-  let weapon: THREE.Object3D;
-
-  if (hasModel("weaponBasic")) {
-    weapon = getModel("weaponBasic");
-    scaleToExtent(weapon, WEAPON_WIDTH, "x");
-    weapon.rotation.y = WEAPON_ROTATION_Y;
-    centerOnGround(weapon);
-    weapon.position.x += WEAPON_X;
-  } else {
-    weapon = new THREE.Mesh(
-      new THREE.BoxGeometry(2, 1.2, 2),
-      new THREE.MeshStandardMaterial({ color: 0x444a52, roughness: 0.6 }),
-    );
-    weapon.position.set(WEAPON_X, 0.6, 0);
-    weapon.castShadow = true;
-  }
-
-  scene.add(weapon);
 }
 
 /** Tiles fence segments along the far (-z) and right (+x spawn) edges (FR-5). */

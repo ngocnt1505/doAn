@@ -30,9 +30,11 @@ import {
   createBulletRenderer,
   createEnemyRenderer,
   createTargetMarkerRenderer,
+  createWeaponRenderer,
   type BulletRenderer,
   type EnemyRenderer,
   type TargetMarkerRenderer,
+  type WeaponRenderer,
 } from "@/systems/renderSystem";
 import { createEnemyManager } from "@/systems/enemyManager";
 import { createSpawnScheduler } from "@/systems/spawnSystem";
@@ -41,13 +43,7 @@ import { createGroundPicker } from "@/lib/raycasting";
 import { createEventBus } from "@/core/eventBus";
 import { createShootController, isInsideYard } from "@/systems/shootingSystem";
 import { resolveImpact } from "@/systems/collisionSystem";
-import { createBullet } from "@/entities/Bullet";
-import {
-  BASIC_WEAPON_DAMAGE,
-  BLAST_RADIUS,
-  BULLET_FLIGHT_TIME,
-  WEAPON_ORIGIN,
-} from "@/core/constants";
+import { BLAST_RADIUS, TOTAL_WAVES, WAVE_CLEAR_DELAY } from "@/core/constants";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,21 +62,15 @@ export default function GameCanvas() {
     let enemyRenderer: EnemyRenderer | null = null;
     let markerRenderer: TargetMarkerRenderer | null = null;
     let bulletRenderer: BulletRenderer | null = null;
+    let weaponRenderer: WeaponRenderer | null = null;
     let detachClick: (() => void) | null = null;
 
-    // M4/M5 — a click broadcasts a `shoot:requested` event; on it we spawn a
-    // bullet at the cannon muzzle carrying the weapon's damage. The movement
-    // system flies it along its arc to the target.
+    // M4/M5 — a click broadcasts a `shoot:requested` event; on it we FIRE_SHOT,
+    // which builds the active weapon's projectile(s) at the muzzle (with its
+    // damage / Big Shot / flight time) and the movement system flies them.
     const bus = createEventBus();
     const unsubShoot = bus.on("shoot:requested", ({ target }) => {
-      store.dispatch({
-        type: "FIRE_BULLET",
-        bullet: createBullet(
-          WEAPON_ORIGIN,
-          { x: target.x, y: 0, z: target.z },
-          BASIC_WEAPON_DAMAGE,
-        ),
-      });
+      store.dispatch({ type: "FIRE_SHOT", target: { x: target.x, z: target.z } });
     });
     const shootController = createShootController(bus);
 
@@ -134,13 +124,14 @@ export default function GameCanvas() {
         store.dispatch({ type: "REMOVE_ENEMY", id }),
       );
 
-      // M2 raycast + M3 marker + M4 shoot: on left-click, cast the cursor onto
-      // the ground plane (M2); if it hits, drop/move the "X" target (M3, via
-      // SET_TARGET) and issue a shoot request (M4, ShootEvent on the bus). No
-      // yard-bounds check or bullet yet — those are later milestones.
+      // Raycast + marker + shoot: on left-click, cast the cursor onto the ground
+      // plane; if it hits and is inside the yard, issue a shoot request on the bus
+      // (→ FIRE_SHOT, which drops the "X" marker and fires the active weapon).
       const picker = createGroundPicker(ctx.camera);
       markerRenderer = createTargetMarkerRenderer(ctx.scene);
       bulletRenderer = createBulletRenderer(ctx.scene);
+      // Owns the three cannon models; shows the active weapon's, hides the rest.
+      weaponRenderer = createWeaponRenderer(ctx.scene);
       const handleClick = (event: PointerEvent) => {
         const c = canvasRef.current;
         if (event.button !== 0 || !c) return; // left button only (SRS FR-15)
@@ -156,8 +147,9 @@ export default function GameCanvas() {
         // Yard restriction (SRS FR-7 / BR-14/15/50/51): only clicks inside the
         // green yard are valid — outside it, no marker and no shot.
         if (!isInsideYard(target)) return;
-        store.dispatch({ type: "SET_TARGET", pos: target }); // M3: marker
-        shootController.requestShoot(target); // M4: shoot event
+        // FIRE_SHOT (via the bus) drops the "X" marker AND builds the weapon's
+        // projectile(s) in one step, so no separate SET_TARGET is needed.
+        shootController.requestShoot(target); // M4: shoot event → FIRE_SHOT
       };
       const clickTarget = canvasRef.current;
       clickTarget.addEventListener("pointerdown", handleClick);
@@ -169,6 +161,10 @@ export default function GameCanvas() {
       // Spawning freezes when the game isn't Playing.
       const enemyManager = createEnemyManager(store);
       const spawnScheduler = createSpawnScheduler(enemyManager);
+
+      // Counts down once a wave's field is clear; null when no clear is pending.
+      // The wave is only declared cleared after this grace period (WAVE_CLEAR_DELAY).
+      let waveClearTimer: number | null = null;
 
       loop = createGameLoop((dt) => {
         store.dispatch({ type: "TICK", dt });
@@ -190,7 +186,7 @@ export default function GameCanvas() {
         const liveBullets = new Set<string>();
         for (const b of bullets) {
           liveBullets.add(b.id);
-          if (b.elapsed >= BULLET_FLIGHT_TIME && !impacted.has(b.id)) {
+          if (b.elapsed >= b.flightTime && !impacted.has(b.id)) {
             impacted.add(b.id);
             bus.emit("bullet:impact", {
               bulletId: b.id,
@@ -203,6 +199,29 @@ export default function GameCanvas() {
         }
         for (const id of impacted) if (!liveBullets.has(id)) impacted.delete(id);
 
+        // Wave completion (SRS FR-23): while Playing, once the whole roster has
+        // spawned (BR-84) and no enemies remain, the field is clear. We then wait
+        // WAVE_CLEAR_DELAY (3s after the last monster dies) before declaring the
+        // wave cleared — Wave 3 → victory (FR-31); earlier waves → reward overlay
+        // + transition (FR-24/25). The game stays Playing during the wait so
+        // bullets/animations finish; pausing cancels the countdown.
+        const w = store.getState();
+        const fieldClear =
+          w.status === "playing" &&
+          w.enemies.length === 0 &&
+          spawnScheduler.isRosterComplete(w.wave);
+        if (fieldClear) {
+          waveClearTimer = waveClearTimer === null ? WAVE_CLEAR_DELAY : waveClearTimer - dt;
+          if (waveClearTimer <= 0) {
+            waveClearTimer = null;
+            store.dispatch(
+              w.wave >= TOTAL_WAVES ? { type: "WIN" } : { type: "WAVE_CLEARED" },
+            );
+          }
+        } else {
+          waveClearTimer = null;
+        }
+
         // Render every frame so the scene + overlays stay drawn (BR-98), but feed
         // the renderer dt = 0 when not Playing so animations / death timers freeze.
         enemyRenderer?.sync(store.getState().enemies, playing ? dt : 0);
@@ -211,6 +230,8 @@ export default function GameCanvas() {
         markerRenderer?.sync(store.getState().marker);
         // Bullets render every frame too; they hold still until trajectory (later).
         bulletRenderer?.sync(store.getState().bullets);
+        // Show the active weapon's cannon (swaps instantly on progression).
+        weaponRenderer?.sync(store.getState().weapon);
         ctx?.render();
       });
       loop.start();
@@ -227,6 +248,7 @@ export default function GameCanvas() {
       enemyRenderer?.dispose();
       markerRenderer?.dispose();
       bulletRenderer?.dispose();
+      weaponRenderer?.dispose();
       ctx?.dispose();
     };
   }, [store]);

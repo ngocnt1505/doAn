@@ -20,15 +20,10 @@
  * ============================================================================= */
 
 import type { Bullet, Vec3 } from "@/types/entity";
-import {
-  BULLET_FLIGHT_TIME,
-  BULLET_GRAVITY,
-  BULLET_REMOVE_TIME,
-} from "@/core/constants";
+import { BULLET_GRAVITY, BULLET_LINGER } from "@/core/constants";
 
-/** Ballistic world position at `t` seconds into the flight (0..flightTime). */
-function ballisticPosition(origin: Vec3, target: Vec3, t: number): Vec3 {
-  const T = BULLET_FLIGHT_TIME;
+/** Ballistic world position at `t` seconds into a flight of length `T`. */
+function ballisticPosition(origin: Vec3, target: Vec3, t: number, T: number): Vec3 {
   const g = BULLET_GRAVITY;
   // Constant horizontal velocity: cover the x/z gap over the whole flight.
   const vx = (target.x - origin.x) / T;
@@ -50,11 +45,13 @@ export function moveBullets(bullets: Bullet[], dt: number): Bullet[] {
   const next: Bullet[] = [];
   for (const bullet of bullets) {
     const elapsed = bullet.elapsed + dt;
-    if (elapsed >= BULLET_REMOVE_TIME) continue; // lifetime over → destroyed
+    // A bullet's full lifetime is its (per-weapon) flight time plus the linger it
+    // rests on the target before cleanup (M9 / SRS FR-39).
+    if (elapsed >= bullet.flightTime + BULLET_LINGER) continue; // destroyed
     const position =
-      elapsed >= BULLET_FLIGHT_TIME
+      elapsed >= bullet.flightTime
         ? { ...bullet.target } // landed: rest on the target during the linger
-        : ballisticPosition(bullet.origin, bullet.target, elapsed);
+        : ballisticPosition(bullet.origin, bullet.target, elapsed, bullet.flightTime);
     next.push({ ...bullet, elapsed, position });
   }
   return next;

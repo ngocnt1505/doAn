@@ -46,6 +46,9 @@ export interface SpawnScheduler {
   /** Call every frame. Spawns the current wave's enemies on schedule while the
    *  game is Playing; freezes otherwise. */
   update: (dt: number, wave: number, status: GameStatus) => void;
+  /** True once every enemy of `wave` has been created (BR-84). Combined with an
+   *  empty enemy list, this signals wave completion (SRS FR-23). */
+  isRosterComplete: (wave: number) => boolean;
 }
 
 export function createSpawnScheduler(manager: EnemyManager): SpawnScheduler {
@@ -89,6 +92,12 @@ export function createSpawnScheduler(manager: EnemyManager): SpawnScheduler {
         // Gap before the NEXT enemy = that enemy's own interval (BR-79/80/81).
         if (cursor < roster.length) timer += SPAWN_INTERVAL[roster[cursor]];
       }
+    },
+
+    isRosterComplete(wave) {
+      // The whole roster for `wave` has been created. Guard on the loaded wave so
+      // a not-yet-started wave (cursor 0, roster []) isn't reported complete.
+      return loadedWave === wave && roster.length > 0 && cursor >= roster.length;
     },
   };
 }

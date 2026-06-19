@@ -25,6 +25,9 @@ import { moveEnemies } from "@/systems/movementSystem";
 import { moveBullets } from "@/systems/bulletSystem";
 import { advanceEnemyStates } from "@/systems/enemyState";
 import { createTargetMarker } from "@/entities/TargetMarker";
+import { createBullet } from "@/entities/Bullet";
+import { WEAPONS, WEAPON_ORDER, TWIN_SHOT_SPREAD } from "@/core/weapons";
+import { WEAPON_ORIGIN, WAVE_TRANSITION_SECONDS } from "@/core/constants";
 
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -100,8 +103,83 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return state.marker ? { ...state, marker: null } : state;
 
     case "FIRE_BULLET":
-      // Add a projectile to the world (M5). The movement system flies it.
+      // Add a pre-built projectile to the world (legacy/debug path).
       return { ...state, bullets: [...state.bullets, action.bullet] };
+
+    case "FIRE_SHOT": {
+      // Fire the active weapon at the clicked target (SRS FR-16/FR-18). The Big
+      // Shot counter only advances on NORMAL attacks (BR-63); reaching the
+      // weapon's interval makes THIS shot a Big Shot and resets the counter
+      // (BR-64). Advanced fires two projectiles, spread apart in depth (BR-45/57).
+      const spec = WEAPONS[state.weapon];
+      const isBigShot = state.attackCount >= spec.bigShotEvery;
+      const damage = isBigShot ? spec.bigShotDamage : spec.damage;
+
+      const bullets = [...state.bullets];
+      for (let i = 0; i < spec.projectiles; i++) {
+        // Centre a single shot; spread a twin shot to ±TWIN_SHOT_SPREAD in z.
+        const zOffset =
+          spec.projectiles > 1
+            ? (i - (spec.projectiles - 1) / 2) * 2 * TWIN_SHOT_SPREAD
+            : 0;
+        bullets.push(
+          createBullet(
+            WEAPON_ORIGIN,
+            { x: action.target.x, y: 0, z: action.target.z + zOffset },
+            damage,
+            spec.flightTime,
+          ),
+        );
+      }
+
+      return {
+        ...state,
+        bullets,
+        attackCount: isBigShot ? 0 : state.attackCount + 1,
+        marker: createTargetMarker(action.target),
+      };
+    }
+
+    case "SELECT_WEAPON": {
+      // Switch the active weapon from the HUD picker — only if it's unlocked
+      // (SRS FR-25). Switching resets the Big Shot counter (per-weapon, BR-62).
+      if (
+        action.weapon === state.weapon ||
+        !state.weaponsUnlocked.includes(action.weapon)
+      ) {
+        return state;
+      }
+      return { ...state, weapon: action.weapon, attackCount: 0 };
+    }
+
+    case "WAVE_CLEARED": {
+      // A non-final wave is done: unlock the next weapon and open the reward
+      // overlay (SRS FR-23/FR-25). Wave 3 completion is handled as WIN instead.
+      if (state.status !== "playing") return state;
+      const unlocked = WEAPON_ORDER[state.wave]; // clearing wave N unlocks [N]
+      const weaponsUnlocked =
+        unlocked && !state.weaponsUnlocked.includes(unlocked)
+          ? [...state.weaponsUnlocked, unlocked]
+          : state.weaponsUnlocked;
+      return { ...state, status: "reward", weaponsUnlocked };
+    }
+
+    case "RESOLVE_REWARD": {
+      // Player closed the reward overlay. "Use now" activates the just-unlocked
+      // weapon; "Continue" keeps the current one (it stays unlocked). Then run
+      // the 3s wave transition before the next wave (SRS FR-24).
+      if (state.status !== "reward") return state;
+      const unlocked = WEAPON_ORDER[state.wave];
+      const weapon = action.useNew && unlocked ? unlocked : state.weapon;
+      return {
+        ...state,
+        weapon,
+        attackCount: weapon !== state.weapon ? 0 : state.attackCount,
+        wave: state.wave + 1, // the transition shows this upcoming number
+        status: "transition",
+        waveTransition: WAVE_TRANSITION_SECONDS,
+      };
+    }
 
     case "MOVE_BULLETS": {
       // Advance bullets along their arc (M7/M8). Gated to Playing so projectiles
@@ -121,6 +199,15 @@ export function reducer(state: GameState, action: GameAction): GameState {
       }
       if (state.status === "playing") {
         return { ...state, elapsed: state.elapsed + action.dt };
+      }
+      if (state.status === "transition") {
+        // Count down the between-wave message; flip to Playing when it elapses so
+        // the spawn scheduler starts the next wave (SRS FR-24 / BR-89).
+        const waveTransition = state.waveTransition - action.dt;
+        if (waveTransition <= 0) {
+          return { ...state, waveTransition: 0, status: "playing" };
+        }
+        return { ...state, waveTransition };
       }
       return state;
     }

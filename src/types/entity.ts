@@ -81,8 +81,11 @@ export interface Bullet {
   target: Vec3;
   /** Current world position, updated each frame by the movement system. */
   position: Vec3;
-  /** Seconds since launch; the flight completes at BULLET_FLIGHT_TIME. */
+  /** Seconds since launch; the flight completes at `flightTime`. */
   elapsed: number;
+  /** Seconds this projectile takes to reach the target — depends on the firing
+   *  weapon (SRS BR-61: Basic slow … Advanced fast). */
+  flightTime: number;
   /** Weapon damage D delivered at impact — the full amount an enemy at the exact
    *  landing point receives (SRS FR-19 / BR-69). Area-of-effect falloff scales it
    *  down with distance. */

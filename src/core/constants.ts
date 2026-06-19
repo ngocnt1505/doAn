@@ -37,6 +37,15 @@ export const HOUSE_MAX_HP = 100;
 /** The game runs for exactly three waves (SRS BR-74); victory follows Wave 3. */
 export const TOTAL_WAVES = 3;
 
+/** Seconds the between-wave "Wave N" transition message stays up before the next
+ *  wave begins spawning (SRS FR-24 / BR-89). */
+export const WAVE_TRANSITION_SECONDS = 3;
+
+/** Grace period (seconds) after the last enemy of a wave leaves the field before
+ *  the wave is declared cleared — so the reward overlay / victory doesn't pop the
+ *  instant the final monster dies. */
+export const WAVE_CLEAR_DELAY = 3;
+
 /* ---------- World / battlefield zones ----------
  * Player-POV layout (per the design sketch):
  *

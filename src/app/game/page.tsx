@@ -18,6 +18,8 @@ import ControlPanel from "@/components/ControlPanel";
 import StartScreen from "@/components/overlays/StartScreen";
 import Countdown from "@/components/overlays/Countdown";
 import PauseScreen from "@/components/overlays/PauseScreen";
+import WaveRewardScreen from "@/components/overlays/WaveRewardScreen";
+import WaveTransition from "@/components/overlays/WaveTransition";
 import WinScreen from "@/components/overlays/WinScreen";
 import LoseScreen from "@/components/overlays/LoseScreen";
 import { GameStoreProvider } from "@/hooks/useGameStore";
@@ -36,6 +38,8 @@ export default function GamePage() {
         <StartScreen />
         <Countdown />
         <PauseScreen />
+        <WaveRewardScreen />
+        <WaveTransition />
         <WinScreen />
         <LoseScreen />
       </main>

@@ -15,15 +15,22 @@ let nextId = 0;
 
 /** Create one bullet launching from `origin` (the weapon muzzle, SRS BR-55)
  *  toward `target` (the clicked landing point), carrying `damage` — the weapon
- *  damage D applied at impact (SRS FR-19). It starts at the origin with no
- *  elapsed flight time. */
-export function createBullet(origin: Vec3, target: Vec3, damage: number): Bullet {
+ *  damage D applied at impact (SRS FR-19) — and reaching the target after
+ *  `flightTime` seconds (per-weapon travel speed, SRS BR-61). It starts at the
+ *  origin with no elapsed flight time. */
+export function createBullet(
+  origin: Vec3,
+  target: Vec3,
+  damage: number,
+  flightTime: number,
+): Bullet {
   return {
     id: `bullet-${nextId++}`,
     origin: { ...origin },
     target: { ...target },
     position: { ...origin },
     elapsed: 0,
+    flightTime,
     damage,
   };
 }

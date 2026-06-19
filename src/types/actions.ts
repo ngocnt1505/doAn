@@ -18,7 +18,7 @@
  *   - Transient inter-system notifications → `src/core/eventBus.ts`
  * ============================================================================= */
 
-import type { Bullet, Enemy, GroundPos } from "./entity";
+import type { Bullet, Enemy, GroundPos, WeaponLevel } from "./entity";
 
 /* ---------- Lifecycle actions (SRS State Diagram) ---------- */
 interface StartGameAction { type: "START_GAME"; } // idle → countdown
@@ -53,10 +53,23 @@ interface DamageEnemyAction { type: "DAMAGE_ENEMY"; id: string; amount: number; 
 interface SetTargetAction { type: "SET_TARGET"; pos: GroundPos; }
 /** Clear the target marker — e.g. the moment a bullet reaches it (M9). */
 interface ClearTargetAction { type: "CLEAR_TARGET"; }
-/** Spawn a projectile (M5). */
+/** Spawn a projectile directly (legacy/debug path; M5). */
 interface FireBulletAction { type: "FIRE_BULLET"; bullet: Bullet; }
+/** Fire the current weapon at a target: builds the projectile(s) for the active
+ *  weapon, advances the Big Shot counter, and drops the marker (Phase 7). */
+interface FireShotAction { type: "FIRE_SHOT"; target: GroundPos; }
 /** Advance all bullets along their arc by `dt` seconds (M7/M8). */
 interface MoveBulletsAction { type: "MOVE_BULLETS"; dt: number; }
+
+/* ---------- Wave / weapon progression (Phase 7) ---------- */
+/** The current wave's enemies are all spawned and destroyed; a non-final wave is
+ *  cleared. Unlocks the next weapon and opens the reward overlay (SRS FR-23/25). */
+interface WaveClearedAction { type: "WAVE_CLEARED"; }
+/** Player answered the reward overlay: `useNew` switches to the just-unlocked
+ *  weapon, otherwise the current one is kept. Starts the wave transition. */
+interface ResolveRewardAction { type: "RESOLVE_REWARD"; useNew: boolean; }
+/** Player picked a weapon from the HUD picker (must be unlocked, SRS FR-25). */
+interface SelectWeaponAction { type: "SELECT_WEAPON"; weapon: WeaponLevel; }
 
 /* ---------- The union ---------- */
 /** Exhaustive union of all legal actions. TypeScript warns if the reducer
@@ -78,4 +91,8 @@ export type GameAction =
   | SetTargetAction
   | ClearTargetAction
   | FireBulletAction
-  | MoveBulletsAction;
+  | FireShotAction
+  | MoveBulletsAction
+  | WaveClearedAction
+  | ResolveRewardAction
+  | SelectWeaponAction;

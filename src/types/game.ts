@@ -29,6 +29,8 @@ export type GameStatus =
   | "countdown" // 3 → 2 → 1 → Ready before the first spawn (SRS FR-3).
   | "playing" // Active simulation. Systems run every frame.
   | "paused" // Frozen. Systems skip update; render keeps drawing (SRS FR-26).
+  | "reward" // Wave cleared: weapon-unlock overlay, awaiting Use now / Continue.
+  | "transition" // 3s "Wave N" message before the next wave spawns (SRS FR-24).
   | "win" // Wave 3 cleared (SRS FR-31).
   | "lose"; // An enemy reached the house (SRS FR-29).
 
@@ -40,13 +42,19 @@ export interface GameState {
   wave: number;
   /** Active weapon; starts "basic" (SRS BR-6/BR-91). */
   weapon: WeaponLevel;
+  /** Weapons the player has unlocked so far; starts just ["basic"]. The HUD
+   *  picker only lets the player switch to weapons in this list (SRS FR-25). */
+  weaponsUnlocked: WeaponLevel[];
+  /** Normal attacks fired since the last Big Shot, for the CURRENT weapon. Resets
+   *  to 0 when the weapon changes or a Big Shot fires (SRS FR-18 / BR-62/63). */
+  attackCount: number;
 
-  /** Player score, derived from kills but stored for HUD reads. */
-  score: number;
   /** Seconds elapsed in the Playing state (SRS FR-31). */
   elapsed: number;
   /** Countdown value shown before the first spawn (SRS FR-3). */
   countdown: number;
+  /** Seconds left in the between-wave transition message (SRS FR-24 / BR-89). */
+  waveTransition: number;
 
   /** The protected house; defeat occurs when an enemy reaches it. */
   player: { hp: number };

@@ -27,9 +27,11 @@ export const initialState = (): GameState => ({
   status: "idle",
   wave: 1,
   weapon: "basic",
-  score: 0,
+  weaponsUnlocked: ["basic"], // only the Basic weapon at the start (SRS BR-91)
+  attackCount: 0,
   elapsed: 0,
   countdown: COUNTDOWN_SECONDS,
+  waveTransition: 0,
   player: { hp: HOUSE_MAX_HP },
   // Enemies are created by the spawn system (Milestone 3), not seeded here.
   enemies: [],
