@@ -71,8 +71,8 @@ export interface TargetMarker {
 }
 
 /** A projectile fired by the weapon. It flies a ballistic arc from the muzzle to
- *  the clicked target over a fixed flight time (Phase 5 · M7/M8). Damage is added
- *  in a later milestone. */
+ *  the clicked target over a fixed flight time (Phase 5 · M7/M8). On landing it
+ *  applies area-of-effect damage based on `damage` (Phase 6 · combat pipeline). */
 export interface Bullet {
   id: string;
   /** Launch point — the weapon muzzle (SRS BR-55). */
@@ -83,4 +83,8 @@ export interface Bullet {
   position: Vec3;
   /** Seconds since launch; the flight completes at BULLET_FLIGHT_TIME. */
   elapsed: number;
+  /** Weapon damage D delivered at impact — the full amount an enemy at the exact
+   *  landing point receives (SRS FR-19 / BR-69). Area-of-effect falloff scales it
+   *  down with distance. */
+  damage: number;
 }

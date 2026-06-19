@@ -91,6 +91,17 @@ export const BULLET_LINGER = 1;
  *  1 s after it lands (SRS FR-39 entity cleanup; M9 Bullet Destroy). */
 export const BULLET_REMOVE_TIME = BULLET_FLIGHT_TIME + BULLET_LINGER;
 
+/* ---------- Combat / area-of-effect damage (SRS FR-19 / FR-38) ---------- */
+/** Blast radius R (world units): the reach of a projectile's area-of-effect.
+ *  An enemy at the exact impact point takes full weapon damage; the amount fades
+ *  linearly to zero at this distance and beyond (SRS damage formula, BR-67/68/69,
+ *  BR-124/125/126). */
+export const BLAST_RADIUS = 6;
+/** Basic weapon normal-shot damage D (SRS BR-35). Every bullet carries this for
+ *  now; per-weapon damage and Big Shots arrive with the weapon-progression
+ *  phase. This is the damage an enemy at the dead-centre of the blast receives. */
+export const BASIC_WEAPON_DAMAGE = 80;
+
 /** Overall half-extent used to size the sun's shadow camera to cover the field. */
 export const BATTLEFIELD_HALF = 50;
 

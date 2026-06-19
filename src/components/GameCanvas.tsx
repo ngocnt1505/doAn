@@ -40,8 +40,14 @@ import { createMouseInputSystem } from "@/systems/mouseInputSystem";
 import { createGroundPicker } from "@/lib/raycasting";
 import { createEventBus } from "@/core/eventBus";
 import { createShootController, isInsideYard } from "@/systems/shootingSystem";
+import { resolveImpact } from "@/systems/collisionSystem";
 import { createBullet } from "@/entities/Bullet";
-import { BULLET_FLIGHT_TIME, WEAPON_ORIGIN } from "@/core/constants";
+import {
+  BASIC_WEAPON_DAMAGE,
+  BLAST_RADIUS,
+  BULLET_FLIGHT_TIME,
+  WEAPON_ORIGIN,
+} from "@/core/constants";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,26 +68,39 @@ export default function GameCanvas() {
     let bulletRenderer: BulletRenderer | null = null;
     let detachClick: (() => void) | null = null;
 
-    // M4/M5 — a click broadcasts a `shoot:requested` event; on it we (M4) log the
-    // request and (M5) spawn a bullet at the cannon muzzle. The bullet just sits
-    // there for now — the trajectory milestone will move it to the target.
+    // M4/M5 — a click broadcasts a `shoot:requested` event; on it we spawn a
+    // bullet at the cannon muzzle carrying the weapon's damage. The movement
+    // system flies it along its arc to the target.
     const bus = createEventBus();
     const unsubShoot = bus.on("shoot:requested", ({ target }) => {
-      console.log(
-        `Shoot requested: Target = (${target.x.toFixed(0)}, 0, ${target.z.toFixed(0)})`,
-      );
       store.dispatch({
         type: "FIRE_BULLET",
-        bullet: createBullet(WEAPON_ORIGIN, { x: target.x, y: 0, z: target.z }),
+        bullet: createBullet(
+          WEAPON_ORIGIN,
+          { x: target.x, y: 0, z: target.z },
+          BASIC_WEAPON_DAMAGE,
+        ),
       });
     });
     const shootController = createShootController(bus);
 
-    // M9 — Impact Detection: confirm each bullet's arrival once. `impacted` guards
-    // against re-firing the event on later frames while the bullet lingers.
+    // Phase 6 — Combat Pipeline: when a bullet lands, spread its damage over
+    // nearby enemies as area-of-effect falloff (SRS FR-19 / FR-38) and dispatch
+    // one DAMAGE_ENEMY per hit. The reducer clamps health, marks an enemy "dead"
+    // at 0 HP, and the renderer plays its fall before it's removed. `impacted`
+    // guards against re-resolving the blast on later frames while the bullet
+    // lingers (SRS BR-122: impact processing runs once per projectile).
     const impacted = new Set<string>();
-    const unsubImpact = bus.on("bullet:impact", ({ x, z }) => {
-      console.log(`Bullet impact at (${x.toFixed(0)}, 0, ${z.toFixed(0)})`);
+    const unsubImpact = bus.on("bullet:impact", ({ x, z, damage }) => {
+      const hits = resolveImpact(
+        store.getState().enemies,
+        { x, z },
+        damage,
+        BLAST_RADIUS,
+      );
+      for (const hit of hits) {
+        store.dispatch({ type: "DAMAGE_ENEMY", id: hit.id, amount: hit.amount });
+      }
     });
 
     // M1 — Mouse Position Detection: tracks the cursor's position over the canvas
@@ -151,12 +170,6 @@ export default function GameCanvas() {
       const enemyManager = createEnemyManager(store);
       const spawnScheduler = createSpawnScheduler(enemyManager);
 
-      // TEMP: drains enemy health to demo death. OFF now so the spawn schedule is
-      // easy to watch (enemies persist). Flip to true to test death again; will
-      // be removed once the weapon can deal damage.
-      const DEBUG_AUTO_DAMAGE = false;
-      const DEBUG_DPS = 50;
-
       loop = createGameLoop((dt) => {
         store.dispatch({ type: "TICK", dt });
 
@@ -164,26 +177,27 @@ export default function GameCanvas() {
         const playing = s.status === "playing";
 
         // All gameplay updates run only while Playing (SRS FR-26 / BR-96): spawn
-        // scheduling, movement, and (temp) damage freeze on Pause / win / lose.
+        // scheduling, movement, and bullet flight freeze on Pause / win / lose.
         spawnScheduler.update(dt, s.wave, s.status); // pause-safe internally
         store.dispatch({ type: "MOVE_ENEMIES", dt }); // reducer gates to Playing
         store.dispatch({ type: "MOVE_BULLETS", dt }); // arc toward target (M7/M8)
-        if (DEBUG_AUTO_DAMAGE && playing) {
-          for (const e of store.getState().enemies) {
-            store.dispatch({ type: "DAMAGE_ENEMY", id: e.id, amount: DEBUG_DPS * dt });
-          }
-        }
 
-        // M9 — Impact Detection: the first frame a bullet reaches its target,
-        // broadcast the impact (once) and hide the "X" immediately. The bullet
-        // itself is destroyed by the movement system 1 s later (the linger).
+        // Impact Detection (SRS FR-37): the first frame a bullet reaches its
+        // target, broadcast the impact (once) so the combat pipeline applies
+        // area-of-effect damage, and hide the "X" immediately. The bullet itself
+        // is destroyed by the movement system 1 s later (the linger).
         const bullets = store.getState().bullets;
         const liveBullets = new Set<string>();
         for (const b of bullets) {
           liveBullets.add(b.id);
           if (b.elapsed >= BULLET_FLIGHT_TIME && !impacted.has(b.id)) {
             impacted.add(b.id);
-            bus.emit("bullet:impact", { bulletId: b.id, x: b.target.x, z: b.target.z });
+            bus.emit("bullet:impact", {
+              bulletId: b.id,
+              x: b.target.x,
+              z: b.target.z,
+              damage: b.damage,
+            });
             store.dispatch({ type: "CLEAR_TARGET" }); // X disappears on arrival
           }
         }

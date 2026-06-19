@@ -24,8 +24,9 @@ import type { GroundPos } from "@/types/entity";
 export interface GameEvents {
   /** Phase 5 · M4 — a shot was requested at a ground target (no bullet yet). */
   "shoot:requested": { target: GroundPos };
-  /** Phase 5 · M9 — a bullet reached its target (no enemy damage yet). */
-  "bullet:impact": { bulletId: string; x: number; z: number };
+  /** Phase 6 — a bullet reached its target; `damage` is the weapon damage D to
+   *  spread over nearby enemies as area-of-effect falloff (SRS FR-19 / FR-38). */
+  "bullet:impact": { bulletId: string; x: number; z: number; damage: number };
   "enemy:killed": { enemyId: string };
   "bullet:hit": { bulletId: string; x: number; z: number };
   "wave:complete": { wave: number };

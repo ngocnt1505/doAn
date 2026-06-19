@@ -24,9 +24,9 @@ const TRAVEL_DISTANCE = SPAWN_X - GOAL_X;
 /** Seconds to cross the field, per type (SRS FR-8). This is TRAVEL TIME — speed
  *  is derived from it below. */
 const TRAVEL_TIME: Record<EnemyType, number> = {
-  easy: 8,
-  medium: 12,
-  hard: 15,
+  easy: 12,
+  medium: 15,
+  hard: 18,
 };
 
 /** How fast an enemy eases sideways toward its random target lane (per second).
