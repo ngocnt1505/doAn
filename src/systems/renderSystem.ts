@@ -21,8 +21,9 @@ import type { Bullet, Enemy, EnemyType, TargetMarker, WeaponLevel } from "@/type
 import type { ModelKey } from "@/lib/models";
 import { getAnimations, getModel, hasModel } from "@/lib/modelCache";
 import { centerOnGround, scaleToExtent } from "@/lib/helpers";
-import { WEAPON_ROTATION_Y, WEAPON_WIDTH, WEAPON_X } from "@/core/constants";
-import { WEAPON_ORDER } from "@/core/weapons";
+import { WEAPON_WIDTH, WEAPON_X } from "@/core/constants";
+import { WEAPONS, WEAPON_ORDER } from "@/core/weapons";
+import { createHealthBar, type HealthBar } from "@/entities/HealthBar";
 
 /** Each enemy type renders with its own GLB (skeleton / zombie / big-arm — see
  *  the GLB asset mapping). Clips are still selected by NAME per model. */
@@ -45,8 +46,31 @@ const ENEMY_FACING_Y = -Math.PI / 2;
 const ENEMY_SCALE: Record<EnemyType, number> = {
   easy: 2,
   medium: 2,
-  hard: 2,
+  hard: 3, // "big-arm" — QA wants it twice the size of the others
 };
+
+/** World Y to float each type's health bar at — tuned to sit just above the
+ *  VISIBLE head (the rigs' measured bounding boxes are far taller than the model,
+ *  so we use fixed values instead). Raise/lower these to move the bar. */
+const BAR_HEAD_Y: Record<EnemyType, number> = {
+  easy: 4,
+  medium: 4,
+  hard: 5, // bigger model → a bit higher
+};
+
+/* Hit feedback (SRS FR-40 / BR-134..137): when an enemy loses health, it briefly
+ * glows red so the player can see the shot connected, then fades back. */
+const HIT_FLASH_TIME = 0.22; // seconds the glow lasts
+const HIT_FLASH_COLOR = 0xff2a2a;
+const HIT_FLASH_MAX = 0.95; // peak emissive intensity
+
+/** A per-instance material we can tint for the hit flash, plus its base emissive
+ *  so we can restore the enemy's normal look afterwards. */
+interface TintTarget {
+  mat: THREE.MeshStandardMaterial;
+  baseEmissive: number;
+  baseIntensity: number;
+}
 
 interface EnemyView {
   root: THREE.Object3D;
@@ -57,6 +81,59 @@ interface EnemyView {
   dying: boolean;
   /** Seconds of fall animation left before we ask the game to remove it. */
   deathRemaining: number;
+  /** Per-instance materials that can be tinted red for the hit flash. */
+  tints: TintTarget[];
+  /** Seconds of hit-flash glow left (0 = not flashing). */
+  flashRemaining: number;
+  /** Health seen last frame, to detect a fresh hit (a drop in health). */
+  lastHealth: number;
+  /** Floating health bar shown above the enemy (SRS FR-41). */
+  bar: HealthBar;
+  /** World Y to place the bar at — just above this enemy's head. */
+  headY: number;
+}
+
+/** Clone a mesh's material(s) so this enemy instance can be tinted without
+ *  affecting others of the same type (GLB clones share materials by default). */
+function cloneTintableMaterials(root: THREE.Object3D): TintTarget[] {
+  const tints: TintTarget[] = [];
+  root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    const cloned = Array.isArray(o.material)
+      ? o.material.map((m) => m.clone())
+      : o.material.clone();
+    o.material = cloned;
+    const list = Array.isArray(cloned) ? cloned : [cloned];
+    for (const m of list) {
+      if (m instanceof THREE.MeshStandardMaterial) {
+        tints.push({
+          mat: m,
+          baseEmissive: m.emissive.getHex(),
+          baseIntensity: m.emissiveIntensity,
+        });
+      }
+    }
+  });
+  return tints;
+}
+
+/** Advance and apply the hit flash for one view. Tints its materials red while
+ *  the flash lasts, then restores their base emissive when it ends. */
+function applyHitFlash(view: EnemyView, dt: number): void {
+  if (view.flashRemaining <= 0) return; // not flashing; materials at base
+  view.flashRemaining = Math.max(0, view.flashRemaining - dt);
+  const t = view.flashRemaining / HIT_FLASH_TIME; // 1 → 0 over the flash
+  if (view.flashRemaining > 0) {
+    for (const e of view.tints) {
+      e.mat.emissive.setHex(HIT_FLASH_COLOR);
+      e.mat.emissiveIntensity = HIT_FLASH_MAX * t;
+    }
+  } else {
+    for (const e of view.tints) {
+      e.mat.emissive.setHex(e.baseEmissive);
+      e.mat.emissiveIntensity = e.baseIntensity;
+    }
+  }
 }
 
 export interface EnemyRenderer {
@@ -70,9 +147,18 @@ export interface EnemyRenderer {
  *  the caller can remove it from game state. */
 export function createEnemyRenderer(
   scene: THREE.Scene,
+  camera: THREE.Camera,
   onExpired: (id: string) => void,
 ): EnemyRenderer {
   const views = new Map<string, EnemyView>();
+
+  /** Build a health bar, add it to the scene, and return it with the world Y to
+   *  hover it at. */
+  function makeBar(headY: number): { bar: HealthBar; headY: number } {
+    const bar = createHealthBar();
+    scene.add(bar.group);
+    return { bar, headY };
+  }
 
   function createView(enemy: Enemy): EnemyView {
     const key = MODEL_BY_TYPE[enemy.type];
@@ -91,6 +177,10 @@ export function createEnemyRenderer(
         deathClip: clips.find((c) => DEATH_CLIP.test(c.name)),
         dying: false,
         deathRemaining: 0,
+        tints: cloneTintableMaterials(model), // per-instance, for the hit flash
+        flashRemaining: 0,
+        lastHealth: enemy.health,
+        ...makeBar(BAR_HEAD_Y[enemy.type]), // fixed per-type bar height
       };
       if (clips.length > 0) {
         view.mixer = new THREE.AnimationMixer(model);
@@ -111,7 +201,21 @@ export function createEnemyRenderer(
     cube.position.y = 1;
     cube.castShadow = true;
     scene.add(cube);
-    return { root: cube, dying: false, deathRemaining: 0 };
+    return {
+      root: cube,
+      dying: false,
+      deathRemaining: 0,
+      tints: [
+        {
+          mat: cube.material as THREE.MeshStandardMaterial,
+          baseEmissive: (cube.material as THREE.MeshStandardMaterial).emissive.getHex(),
+          baseIntensity: (cube.material as THREE.MeshStandardMaterial).emissiveIntensity,
+        },
+      ],
+      flashRemaining: 0,
+      lastHealth: enemy.health,
+      ...makeBar(2.6), // fallback cube bar height
+    };
   }
 
   /** Switch a view to its death animation (or mark it for instant removal). */
@@ -132,6 +236,8 @@ export function createEnemyRenderer(
 
   function disposeView(view: EnemyView): void {
     view.mixer?.stopAllAction();
+    scene.remove(view.bar.group);
+    view.bar.dispose();
     scene.remove(view.root);
     view.root.traverse((o) => {
       if (o instanceof THREE.Mesh) {
@@ -153,6 +259,21 @@ export function createEnemyRenderer(
         if (!view) {
           view = createView(enemy);
           views.set(enemy.id, view);
+        }
+
+        // Hit feedback (SRS FR-40): a drop in health since last frame means the
+        // enemy just took damage — trigger the red glow. Then advance/apply it.
+        if (enemy.health < view.lastHealth) view.flashRemaining = HIT_FLASH_TIME;
+        view.lastHealth = enemy.health;
+        applyHitFlash(view, dt);
+
+        // Health bar (SRS FR-41): hover above the enemy, fill = HP fraction,
+        // face the camera. Hidden once dead (it's at 0 and the body is falling).
+        view.bar.group.visible = enemy.state !== "dead";
+        if (view.bar.group.visible) {
+          view.bar.group.position.set(enemy.pos.x, view.headY, enemy.pos.z);
+          view.bar.setFraction(enemy.health / enemy.maxHealth);
+          view.bar.faceCamera(camera);
         }
 
         if (enemy.state === "dead") {
@@ -259,6 +380,8 @@ export function createTargetMarkerRenderer(
 /** Cannonball radius, world units. */
 const BULLET_RADIUS = 0.4;
 const BULLET_COLOR = 0x222428;
+/** Big Shots render red so they stand out from normal shots (SRS FR-18, QA). */
+const BIG_SHOT_COLOR = 0xe22424;
 
 export interface BulletRenderer {
   /** Reconcile cannonball meshes with the current bullets. */
@@ -267,14 +390,16 @@ export interface BulletRenderer {
   dispose: () => void;
 }
 
-/** A dark metallic sphere — the cannonball. */
-function buildBulletMesh(): THREE.Mesh {
+/** A metallic sphere — the cannonball. Big Shots are red, normal shots dark. */
+function buildBulletMesh(isBigShot: boolean): THREE.Mesh {
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(BULLET_RADIUS, 16, 16),
     new THREE.MeshStandardMaterial({
-      color: BULLET_COLOR,
+      color: isBigShot ? BIG_SHOT_COLOR : BULLET_COLOR,
       roughness: 0.35,
       metalness: 0.7,
+      emissive: isBigShot ? BIG_SHOT_COLOR : 0x000000,
+      emissiveIntensity: isBigShot ? 0.4 : 0,
     }),
   );
   mesh.castShadow = true;
@@ -297,7 +422,7 @@ export function createBulletRenderer(scene: THREE.Scene): BulletRenderer {
         live.add(bullet.id);
         let mesh = meshes.get(bullet.id);
         if (!mesh) {
-          mesh = buildBulletMesh();
+          mesh = buildBulletMesh(bullet.isBigShot);
           scene.add(mesh);
           meshes.set(bullet.id, mesh);
         }
@@ -345,7 +470,7 @@ function buildCannon(level: WeaponLevel): THREE.Object3D {
   if (hasModel(key)) {
     const cannon = getModel(key);
     scaleToExtent(cannon, WEAPON_WIDTH, "x");
-    cannon.rotation.y = WEAPON_ROTATION_Y;
+    cannon.rotation.y = WEAPONS[level].rotationY; // per-weapon: face the yard (+x)
     centerOnGround(cannon);
     cannon.position.x += WEAPON_X;
     cannon.traverse((o) => {

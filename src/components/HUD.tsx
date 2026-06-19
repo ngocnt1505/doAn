@@ -43,9 +43,16 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function HUD() {
-  const { status, wave, elapsed, weapon, weaponsUnlocked } = useGameState();
+  const { status, wave, elapsed, weapon, weaponsUnlocked, weaponCooldown } =
+    useGameState();
   const { dispatch } = useGameStore();
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Reload progress: 100% = ready to fire, lower while the weapon reloads.
+  const reloadPct =
+    weaponCooldown <= 0
+      ? 100
+      : (1 - weaponCooldown / WEAPONS[weapon].reloadTime) * 100;
 
   const active =
     status === "countdown" ||
@@ -70,7 +77,21 @@ export default function HUD() {
         <Panel className="flex items-center divide-x divide-white/10 px-2 py-2">
           <Stat label="Wave" value={`${wave} / ${TOTAL_WAVES}`} />
           <Stat label="Time" value={formatTime(elapsed)} />
-          <Stat label="Weapon" value={WEAPONS[weapon].label} />
+          <div className="flex flex-col items-center px-4">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-400">
+              Weapon
+            </span>
+            <span className="text-lg font-semibold tabular-nums">
+              {WEAPONS[weapon].label}
+            </span>
+            {/* Reload bar: fills green as the weapon reloads, full = ready. */}
+            <div className="mt-1 h-1 w-16 overflow-hidden rounded bg-white/15">
+              <div
+                className={`h-full ${reloadPct >= 100 ? "bg-emerald-400" : "bg-amber-400"}`}
+                style={{ width: `${reloadPct}%` }}
+              />
+            </div>
+          </div>
           <div className="flex items-center pl-3">
             <button
               onClick={() => setPickerOpen((o) => !o)}

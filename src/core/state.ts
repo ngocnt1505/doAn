@@ -29,6 +29,7 @@ export const initialState = (): GameState => ({
   weapon: "basic",
   weaponsUnlocked: ["basic"], // only the Basic weapon at the start (SRS BR-91)
   attackCount: 0,
+  weaponCooldown: 0, // ready to fire immediately
   elapsed: 0,
   countdown: COUNTDOWN_SECONDS,
   waveTransition: 0,

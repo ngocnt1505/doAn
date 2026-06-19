@@ -28,7 +28,15 @@ export default function LoseScreen() {
         <p className="mb-8 text-zinc-300">
           A monster broke through and reached the house. Try again?
         </p>
-        <Button onClick={() => dispatch({ type: "RESTART" })}>Restart</Button>
+        <div className="flex flex-col gap-3">
+          <Button onClick={() => dispatch({ type: "RESTART" })}>Restart</Button>
+          <Button
+            variant="secondary"
+            onClick={() => dispatch({ type: "RETURN_TO_MENU" })}
+          >
+            Quit
+          </Button>
+        </div>
       </Panel>
     </div>
   );

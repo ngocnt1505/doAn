@@ -154,11 +154,11 @@ side of the house spans the entire width of the battlefield.
 
 The game features three enemy types with different health and movement
 characteristics. Easy enemies have 100 health points and move at the
-highest speed, reaching the house in approximately eight seconds if not
+highest speed, reaching the house in approximately twenty seconds if not
 eliminated. Medium enemies have 200 health points and require
-approximately twelve seconds to reach the house. Hard enemies have 400
+approximately twenty-five seconds to reach the house. Hard enemies have 400
 health points and move at the slowest speed, requiring approximately
-fifteen seconds to reach the house.
+thirty seconds to reach the house.
 
 To defend the house, the player controls a cannon that fires projectiles
 toward selected locations on the battlefield. When the player clicks on
@@ -808,17 +808,17 @@ Three enemy classes are supported.
 
 - BR-17: The Easy enemy shall have 100 HP.
 
-- BR-18: The Easy enemy shall reach the house in approximately 8 seconds
+- BR-18: The Easy enemy shall reach the house in approximately 20 seconds
   if uninterrupted.
 
 - BR-19: The Medium enemy shall have 200 HP.
 
-- BR-20: The Medium enemy shall reach the house in approximately 12
+- BR-20: The Medium enemy shall reach the house in approximately 25
   seconds if uninterrupted.
 
 - BR-21: The Hard enemy shall have 400 HP.
 
-- BR-22: The Hard enemy shall reach the house in approximately 15
+- BR-22: The Hard enemy shall reach the house in approximately 30
   seconds if uninterrupted.
 
 ### FR-9 Enemy Spawn
@@ -889,6 +889,9 @@ The Weapon System controls weapon progression and damage capabilities.
 
 - BR-38: The Basic weapon shall have the slowest projectile travel time.
 
+- BR-130: The Basic weapon shall require 2 seconds to reload before it
+  can fire again.
+
 ### FR-13 Medium Weapon
 
 **Business Rules**
@@ -902,6 +905,9 @@ The Weapon System controls weapon progression and damage capabilities.
 - BR-42: The Big Shot shall deal 70 damage.
 
 - BR-43: Projectile travel speed shall be faster than the Basic weapon.
+
+- BR-131: The Medium weapon shall require 3 seconds to reload before it
+  can fire again.
 
 ### FR-14 Advanced Weapon
 
@@ -918,6 +924,22 @@ The Weapon System controls weapon progression and damage capabilities.
 - BR-48: The Big Shot shall deal 100 damage.
 
 - BR-49: Projectile travel speed shall be the fastest among all weapons.
+
+- BR-132: The Advanced weapon shall require 4 seconds to reload before it
+  can fire again.
+
+**Weapon Reload Times**
+
+::: center
+  Weapon      Reload Time
+  ---------- -------------
+  Basic         2 Seconds
+  Medium        3 Seconds
+  Advanced      4 Seconds
+:::
+
+More powerful weapons reload more slowly, balancing their higher damage
+and additional projectiles.
 
 "'
 
@@ -1022,6 +1044,10 @@ A valid target location is selected.
 - BR-56: The projectile target shall be the selected target position.
 
 - BR-57: Advanced Weapon attacks shall spawn two projectiles.
+
+- BR-133: A shooting action shall be ignored while the equipped weapon is
+  reloading; no projectile or target marker shall be created until the
+  reload completes (BR-130..132).
 
 **Acceptance Criteria**
 
@@ -1757,6 +1783,47 @@ Display visual motion of entities.
 
 - BR-117: Animations shall update every render frame.
 
+### FR-40 Damage Hit Feedback
+
+**Purpose**
+
+Give the player clear visual confirmation that a projectile damaged an
+enemy.
+
+**Trigger**
+
+An enemy's health is reduced by a projectile impact.
+
+**Main Flow**
+
+1.  A projectile lands and applies area-of-effect damage.
+
+2.  Each enemy that loses health briefly flashes a red glow.
+
+3.  The glow fades out over a short duration.
+
+4.  The enemy resumes its normal appearance.
+
+**Business Rules**
+
+- BR-134: An enemy that receives damage shall display a red glow (hit
+  flash).
+
+- BR-135: The hit flash shall be brief and fade out automatically.
+
+- BR-136: Enemies that receive no damage shall not flash.
+
+- BR-137: The hit flash shall be purely visual and shall not affect enemy
+  health, movement, or collision.
+
+**Acceptance Criteria**
+
+- Damaged enemies visibly flash red on impact.
+
+- The flash fades shortly after the hit.
+
+- Enemies outside the blast radius do not flash.
+
 ## Physics and Collision System
 
 The Physics and Collision System manages projectile movement, impact
@@ -1956,3 +2023,54 @@ values, and visual effects.
 
 Examples include explosive projectiles, rapid-fire weapons,
 area-of-effect attacks, and specialized defensive weapons.
+
+# Enemy Health Indicator
+
+### FR-41 Enemy Health Bar
+
+**Purpose**
+
+Show each enemy's remaining health directly above it, so the player can
+gauge how close a monster is to being destroyed and prioritize targets.
+
+**Main Flow**
+
+1.  When an enemy appears, a health bar is displayed above it.
+
+2.  The bar always faces the camera.
+
+3.  The filled portion reflects the enemy's current health as a fraction
+    of its maximum health.
+
+4.  The fill color transitions from green through yellow to red as the
+    enemy loses health.
+
+5.  The bar follows the enemy as it moves and is removed when the enemy
+    is destroyed.
+
+**Business Rules**
+
+- BR-138: A health bar shall be displayed above every enemy from the
+  moment it spawns.
+
+- BR-139: The filled length of the bar shall be proportional to the
+  enemy's current health divided by its maximum health.
+
+- BR-140: The fill color shall transition from green (full health)
+  through yellow to red (low health).
+
+- BR-141: The health bar shall always face the camera.
+
+- BR-142: The health bar shall follow the enemy and shall be removed when
+  the enemy is destroyed.
+
+- BR-143: The health bar shall be purely visual and shall not affect enemy
+  health, movement, or collision.
+
+**Acceptance Criteria**
+
+- Every enemy displays a health bar as soon as it spawns.
+
+- The bar shrinks and changes color as the enemy loses health.
+
+- The bar disappears when the enemy is destroyed.

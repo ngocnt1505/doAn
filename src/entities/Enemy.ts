@@ -18,15 +18,16 @@ const ENEMY_HP: Record<EnemyType, number> = {
   hard: 400,
 };
 
-/** Max lateral offset (world units) applied to an enemy's target lane, so paths
- *  aren't perfectly straight/parallel (SRS BR-28 "small random offset"). */
-const WANDER_OFFSET = 2;
+/** Amplitude range (world units) of the lateral sine weave. Each enemy gets a
+ *  random value in [min, max] so they don't all swing the same width. */
+const WANDER_AMP_MIN = 2.5;
+const WANDER_AMP_MAX = 6;
 
 let nextId = 0;
 
 /** Create one enemy of `type` at a ground position. Starts SPAWNING with full
- *  health; the state machine flips it to MOVING on the next update. Picks a
- *  random target lane (spawn z ± WANDER_OFFSET) for non-straight movement. */
+ *  health; the state machine flips it to MOVING on the next update. Gets a random
+ *  weave phase + amplitude so it follows a smooth, non-straight path. */
 export function createEnemy(type: EnemyType, pos: GroundPos): Enemy {
   const maxHealth = ENEMY_HP[type];
   return {
@@ -36,7 +37,8 @@ export function createEnemy(type: EnemyType, pos: GroundPos): Enemy {
     health: maxHealth,
     maxHealth,
     pos,
-    // random(-WANDER_OFFSET, +WANDER_OFFSET) added to the spawn lane
-    targetZ: pos.z + (Math.random() * 2 - 1) * WANDER_OFFSET,
+    baseZ: pos.z,
+    wanderPhase: Math.random() * Math.PI * 2,
+    wanderAmp: WANDER_AMP_MIN + Math.random() * (WANDER_AMP_MAX - WANDER_AMP_MIN),
   };
 }

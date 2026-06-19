@@ -48,6 +48,9 @@ export interface GameState {
   /** Normal attacks fired since the last Big Shot, for the CURRENT weapon. Resets
    *  to 0 when the weapon changes or a Big Shot fires (SRS FR-18 / BR-62/63). */
   attackCount: number;
+  /** Seconds left until the weapon can fire again — the reload timer (SRS FR-16 /
+   *  BR-130..132). 0 means ready; firing sets it to the weapon's reload time. */
+  weaponCooldown: number;
 
   /** Seconds elapsed in the Playing state (SRS FR-31). */
   elapsed: number;

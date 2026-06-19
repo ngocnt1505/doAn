@@ -13,7 +13,7 @@
  * ============================================================================= */
 
 import type { Enemy, EnemyType } from "@/types/entity";
-import { DEFENSE_LINE_X, SPAWN_X } from "@/core/constants";
+import { DEFENSE_LINE_X, SPAWN_X, YARD_HALF_DEPTH } from "@/core/constants";
 
 /** The enemies' goal: the house front (left side, -x). */
 export const GOAL_X = DEFENSE_LINE_X;
@@ -24,14 +24,16 @@ const TRAVEL_DISTANCE = SPAWN_X - GOAL_X;
 /** Seconds to cross the field, per type (SRS FR-8). This is TRAVEL TIME — speed
  *  is derived from it below. */
 const TRAVEL_TIME: Record<EnemyType, number> = {
-  easy: 12,
-  medium: 15,
-  hard: 18,
+  easy: 25,
+  medium: 30,
+  hard: 35,
 };
 
-/** How fast an enemy eases sideways toward its random target lane (per second).
- *  Small, so the lateral drift is gentle (SRS BR-28/29). */
-const WANDER_Z_RATE = 0.6;
+/** How many full side-to-side weaves an enemy makes crossing the whole field.
+ *  Higher = tighter, more frequent S-curves; lower = long lazy sweeps. */
+const WANDER_CYCLES = 2.4;
+/** Keep the weave (and so the enemies) clear of the fence at the depth edges. */
+const WANDER_MARGIN = 3;
 
 /** Constant advance speed (world units/second) toward the house, by type. */
 export function speedFor(type: EnemyType): number {
@@ -39,17 +41,22 @@ export function speedFor(type: EnemyType): number {
 }
 
 /** Advance every enemy toward the house by `dt` seconds, clamped at the goal so
- *  they stop at the house front rather than walking off the map. Each enemy also
- *  eases sideways toward its random `targetZ`, so the group doesn't move in one
- *  perfectly straight line (SRS BR-27/28/29/30). Returns a new array (enemies
- *  that didn't move keep their identity). */
+ *  they stop at the house front rather than walking off the map. Lateral position
+ *  is a smooth sine weave around the enemy's lane, driven by how far it has
+ *  travelled — so each enemy follows a continuous, natural, non-straight path with
+ *  its own width and phase (SRS BR-27/28/29/30). Returns a new array. */
 export function moveEnemies(enemies: Enemy[], dt: number): Enemy[] {
+  const half = YARD_HALF_DEPTH - WANDER_MARGIN;
   return enemies.map((enemy) => {
     if (enemy.state !== "moving") return enemy; // only MOVING enemies advance
+
     const x = Math.max(enemy.pos.x - speedFor(enemy.type) * dt, GOAL_X);
-    // Ease toward the (randomly offset) target lane — gentle, not a hard turn.
-    const z = enemy.pos.z + (enemy.targetZ - enemy.pos.z) * Math.min(1, WANDER_Z_RATE * dt);
-    if (x === enemy.pos.x && z === enemy.pos.z) return enemy; // nothing changed
+    // Progress 0 (spawn) → 1 (house); the sine completes WANDER_CYCLES swings.
+    const progress = (SPAWN_X - x) / TRAVEL_DISTANCE;
+    const weave =
+      enemy.wanderAmp *
+      Math.sin(enemy.wanderPhase + progress * Math.PI * 2 * WANDER_CYCLES);
+    const z = Math.max(-half, Math.min(half, enemy.baseZ + weave));
     return { ...enemy, pos: { x, z } };
   });
 }

@@ -23,6 +23,7 @@ export function createBullet(
   target: Vec3,
   damage: number,
   flightTime: number,
+  isBigShot = false,
 ): Bullet {
   return {
     id: `bullet-${nextId++}`,
@@ -32,5 +33,6 @@ export function createBullet(
     elapsed: 0,
     flightTime,
     damage,
+    isBigShot,
   };
 }

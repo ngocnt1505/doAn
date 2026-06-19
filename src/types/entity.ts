@@ -58,9 +58,12 @@ export interface Enemy {
   maxHealth: number;
   /** Ground position (x = width, z = depth). y is always 0 (on the ground). */
   pos: GroundPos;
-  /** Lateral lane the enemy walks toward = spawn z + a small random offset, so
-   *  enemies don't move in one perfectly straight line (SRS BR-27/28/29/30). */
-  targetZ: number;
+  /** Lane the enemy smoothly weaves around (its spawn z). */
+  baseZ: number;
+  /** Per-enemy phase + amplitude of the lateral sine weave, so each one follows a
+   *  unique, smooth, non-straight path (SRS BR-27/28/29/30). */
+  wanderPhase: number;
+  wanderAmp: number;
 }
 
 /** The single "X" the player drops by clicking — the chosen target location
@@ -90,4 +93,7 @@ export interface Bullet {
    *  landing point receives (SRS FR-19 / BR-69). Area-of-effect falloff scales it
    *  down with distance. */
   damage: number;
+  /** True if this projectile is a Big Shot (SRS FR-18). Purely cosmetic here —
+   *  the renderer draws Big Shots red to set them apart from normal shots. */
+  isBigShot: boolean;
 }

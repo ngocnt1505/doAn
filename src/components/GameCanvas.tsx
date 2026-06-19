@@ -43,6 +43,7 @@ import { createGroundPicker } from "@/lib/raycasting";
 import { createEventBus } from "@/core/eventBus";
 import { createShootController, isInsideYard } from "@/systems/shootingSystem";
 import { resolveImpact } from "@/systems/collisionSystem";
+import { createImpactEffects, type ImpactRenderer } from "@/entities/ImpactEffect";
 import { BLAST_RADIUS, TOTAL_WAVES, WAVE_CLEAR_DELAY } from "@/core/constants";
 
 export default function GameCanvas() {
@@ -63,6 +64,7 @@ export default function GameCanvas() {
     let markerRenderer: TargetMarkerRenderer | null = null;
     let bulletRenderer: BulletRenderer | null = null;
     let weaponRenderer: WeaponRenderer | null = null;
+    let impactEffects: ImpactRenderer | null = null;
     let detachClick: (() => void) | null = null;
 
     // M4/M5 — a click broadcasts a `shoot:requested` event; on it we FIRE_SHOT,
@@ -81,7 +83,9 @@ export default function GameCanvas() {
     // guards against re-resolving the blast on later frames while the bullet
     // lingers (SRS BR-122: impact processing runs once per projectile).
     const impacted = new Set<string>();
-    const unsubImpact = bus.on("bullet:impact", ({ x, z, damage }) => {
+    const unsubImpact = bus.on("bullet:impact", ({ x, z, damage, big }) => {
+      // Visual burst at the landing spot (Phase 9) — bigger/red for Big Shots.
+      impactEffects?.spawn({ x, z }, big);
       const hits = resolveImpact(
         store.getState().enemies,
         { x, z },
@@ -120,7 +124,7 @@ export default function GameCanvas() {
 
       // Owns the enemy meshes + animations; reconciles them to state each frame.
       // When a dead enemy finishes its fall animation, remove it from state.
-      enemyRenderer = createEnemyRenderer(ctx.scene, (id) =>
+      enemyRenderer = createEnemyRenderer(ctx.scene, ctx.camera, (id) =>
         store.dispatch({ type: "REMOVE_ENEMY", id }),
       );
 
@@ -132,6 +136,8 @@ export default function GameCanvas() {
       bulletRenderer = createBulletRenderer(ctx.scene);
       // Owns the three cannon models; shows the active weapon's, hides the rest.
       weaponRenderer = createWeaponRenderer(ctx.scene);
+      // Transient impact bursts spawned on bullet:impact (Phase 9 VFX).
+      impactEffects = createImpactEffects(ctx.scene);
       const handleClick = (event: PointerEvent) => {
         const c = canvasRef.current;
         if (event.button !== 0 || !c) return; // left button only (SRS FR-15)
@@ -193,6 +199,7 @@ export default function GameCanvas() {
               x: b.target.x,
               z: b.target.z,
               damage: b.damage,
+              big: b.isBigShot,
             });
             store.dispatch({ type: "CLEAR_TARGET" }); // X disappears on arrival
           }
@@ -232,6 +239,8 @@ export default function GameCanvas() {
         bulletRenderer?.sync(store.getState().bullets);
         // Show the active weapon's cannon (swaps instantly on progression).
         weaponRenderer?.sync(store.getState().weapon);
+        // Advance impact bursts (frozen with the rest of the sim when not playing).
+        impactEffects?.update(playing ? dt : 0);
         ctx?.render();
       });
       loop.start();
@@ -249,6 +258,7 @@ export default function GameCanvas() {
       markerRenderer?.dispose();
       bulletRenderer?.dispose();
       weaponRenderer?.dispose();
+      impactEffects?.dispose();
       ctx?.dispose();
     };
   }, [store]);

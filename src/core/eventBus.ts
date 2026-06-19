@@ -25,8 +25,15 @@ export interface GameEvents {
   /** Phase 5 · M4 — a shot was requested at a ground target (no bullet yet). */
   "shoot:requested": { target: GroundPos };
   /** Phase 6 — a bullet reached its target; `damage` is the weapon damage D to
-   *  spread over nearby enemies as area-of-effect falloff (SRS FR-19 / FR-38). */
-  "bullet:impact": { bulletId: string; x: number; z: number; damage: number };
+   *  spread over nearby enemies as area-of-effect falloff (SRS FR-19 / FR-38).
+   *  `big` marks a Big Shot so the impact VFX can render bigger/red (Phase 9). */
+  "bullet:impact": {
+    bulletId: string;
+    x: number;
+    z: number;
+    damage: number;
+    big: boolean;
+  };
   "enemy:killed": { enemyId: string };
   "bullet:hit": { bulletId: string; x: number; z: number };
   "wave:complete": { wave: number };

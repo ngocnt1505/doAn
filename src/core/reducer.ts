@@ -21,7 +21,7 @@
 import type { GameAction } from "@/types/actions";
 import type { GameState } from "@/types/game";
 import { initialState } from "@/core/state";
-import { moveEnemies } from "@/systems/movementSystem";
+import { moveEnemies, GOAL_X } from "@/systems/movementSystem";
 import { moveBullets } from "@/systems/bulletSystem";
 import { advanceEnemyStates } from "@/systems/enemyState";
 import { createTargetMarker } from "@/entities/TargetMarker";
@@ -78,6 +78,15 @@ export function reducer(state: GameState, action: GameAction): GameState {
       // lose (SRS FR-26 / BR-96: no gameplay updates while paused).
       if (state.status !== "playing" || state.enemies.length === 0) return state;
       const enemies = moveEnemies(advanceEnemyStates(state.enemies), action.dt);
+
+      // Defeat (SRS FR-29 / BR-104/105): the instant any living enemy reaches the
+      // house front (the defensive boundary, GOAL_X), the game is lost. Movement
+      // clamps enemies AT GOAL_X, so an enemy that got there has breached it.
+      const breached = enemies.some(
+        (e) => e.state === "moving" && e.pos.x <= GOAL_X + 1e-3,
+      );
+      if (breached) return { ...state, enemies, status: "lose" };
+
       return { ...state, enemies };
     }
 
@@ -107,6 +116,10 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, bullets: [...state.bullets, action.bullet] };
 
     case "FIRE_SHOT": {
+      // Only fire while Playing (SRS FR-15 precondition) and when the weapon has
+      // finished reloading (BR-130..132) — clicks during reload are ignored.
+      if (state.status !== "playing" || state.weaponCooldown > 0) return state;
+
       // Fire the active weapon at the clicked target (SRS FR-16/FR-18). The Big
       // Shot counter only advances on NORMAL attacks (BR-63); reaching the
       // weapon's interval makes THIS shot a Big Shot and resets the counter
@@ -128,6 +141,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
             { x: action.target.x, y: 0, z: action.target.z + zOffset },
             damage,
             spec.flightTime,
+            isBigShot,
           ),
         );
       }
@@ -136,6 +150,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
         ...state,
         bullets,
         attackCount: isBigShot ? 0 : state.attackCount + 1,
+        weaponCooldown: spec.reloadTime, // start the reload (BR-130..132)
         marker: createTargetMarker(action.target),
       };
     }
@@ -149,7 +164,8 @@ export function reducer(state: GameState, action: GameAction): GameState {
       ) {
         return state;
       }
-      return { ...state, weapon: action.weapon, attackCount: 0 };
+      // Switching weapons resets the Big Shot counter and the reload (ready now).
+      return { ...state, weapon: action.weapon, attackCount: 0, weaponCooldown: 0 };
     }
 
     case "WAVE_CLEARED": {
@@ -175,6 +191,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
         ...state,
         weapon,
         attackCount: weapon !== state.weapon ? 0 : state.attackCount,
+        weaponCooldown: 0, // start the next wave ready to fire
         wave: state.wave + 1, // the transition shows this upcoming number
         status: "transition",
         waveTransition: WAVE_TRANSITION_SECONDS,
@@ -198,7 +215,12 @@ export function reducer(state: GameState, action: GameAction): GameState {
         return { ...state, countdown };
       }
       if (state.status === "playing") {
-        return { ...state, elapsed: state.elapsed + action.dt };
+        return {
+          ...state,
+          elapsed: state.elapsed + action.dt,
+          // Tick down the weapon reload (BR-130..132); clamp at 0 = ready.
+          weaponCooldown: Math.max(0, state.weaponCooldown - action.dt),
+        };
       }
       if (state.status === "transition") {
         // Count down the between-wave message; flip to Playing when it elapses so

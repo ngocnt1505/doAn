@@ -21,9 +21,6 @@ export default function WaveTransition() {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center">
-      <span className="mb-2 text-sm uppercase tracking-[0.3em] text-zinc-300 drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)]">
-        Get ready
-      </span>
       {/* keyed by wave so the pop animation replays on each transition */}
       <span
         key={wave}
