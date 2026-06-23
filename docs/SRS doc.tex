@@ -1,0 +1,2015 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------------------
+% Software Requirements Specification
+% 3D House Defense Game Implemented with WebGL and Three.js
+% ---------------------------------------------------------------------------
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  pdftitle={SRS - 3D House Defense Game},
+  pdfauthor={Nguyen Thuy Ngoc}
+}
+
+% Code listing style for the GameState example
+\definecolor{codebg}{rgb}{0.96,0.96,0.96}
+\lstdefinestyle{tslisting}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  framesep=6pt,
+  keywordstyle=\color{blue},
+  showstringspaces=false,
+  language=Java
+}
+
+\setlist{nosep,leftmargin=1.6em}
+\renewcommand{\arraystretch}{1.25}
+
+% ---------------------------------------------------------------------------
+
+\begin{document}
+
+% ----------------------------- Title Page ----------------------------------
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+
+  {\large UNIVERSITY OF SCIENCE AND TECHNOLOGY OF HANOI\par}
+  \vspace{2.5cm}
+
+  {\Huge\bfseries Software Requirements Specification\par}
+  \vspace{1.5cm}
+
+  {\LARGE 3D House Defense Game Implemented with WebGL and Three.js\par}
+  \vspace{3cm}
+
+  \begin{tabular}{ll}
+    \textbf{Student:}        & Nguyen Thuy Ngoc \\
+    \textbf{Student ID:}     & 23BI14344 \\
+    \textbf{Academic Year:}  & 2025--2026 \\
+  \end{tabular}
+
+  \vfill
+  {\large 2026-06-17\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ===========================================================================
+\section{Introduction}
+
+\subsection{Purpose}
+
+The purpose of this Software Requirements Specification (SRS) is to define the
+functional and non-functional requirements of the \emph{3D House Defense Game
+Implemented with WebGL and Three.js}. This document serves as a reference for
+the analysis, design, implementation, testing, and evaluation of the system
+throughout the project lifecycle.
+
+Although the application is presented as a simple 3D defense game, its primary
+objective is to demonstrate the development of a modern interactive web
+application using frontend technologies. The system is developed with Next.js,
+React, TypeScript, and Three.js, providing an opportunity to explore
+component-based architecture, type-safe development practices, real-time
+rendering, and interactive user experiences within a browser environment.
+
+\subsection{Scope}
+
+The project consists of a browser-based interactive 3D application developed
+using modern web technologies. The application is implemented using Next.js as
+the frontend framework and TypeScript as the primary programming language.
+Three.js and WebGL are used to construct and render the interactive 3D
+environment directly within the browser. The application presents a defensive
+gameplay scenario in which the player protects a house from approaching
+monsters by aiming and firing projectiles.
+
+The game environment includes a house, surrounding yard, fence, monsters, and
+weapons rendered within a three-dimensional scene. Players interact with the
+application through mouse-based controls to observe the environment, target
+enemies, and perform shooting actions.
+
+While the game scenario provides the functional context of the application, the
+primary focus of the project is the implementation of frontend systems that
+support real-time interaction and rendering. The project demonstrates how
+modern web technologies can be used to build responsive and visually rich
+browser applications without requiring dedicated game engines or native
+software installation.
+
+\subsection{Objectives}
+
+The main objectives of this project are as follows:
+
+\begin{itemize}
+  \item Develop a browser-based interactive 3D application using modern
+        frontend development practices like Next.js, React, and TypeScript.
+  \item Demonstrate the integration of real-time rendering and user interaction
+        within a web environment.
+  \item Apply fundamental computer graphics concepts such as scene
+        construction, lighting, texture mapping, animation, and object
+        interaction.
+  \item Design and implement gameplay mechanics that provide meaningful
+        interaction with the virtual environment.
+  \item Explore frontend architectural approaches for managing application
+        state and real-time events.
+  \item Deliver a complete and functional software product that can be executed
+        directly within modern web browsers.
+\end{itemize}
+
+\subsection{Document Structure}
+
+This document is organized into five sections.
+
+Section 1 introduces the purpose, scope, objectives, and terminology used
+throughout the document.
+
+Section 2 provides an overview of the system, including its background, users,
+constraints, and major functionalities.
+
+Section 3 specifies the detailed functional requirements of the application.
+
+Section 4 describes the non-functional requirements that define the quality
+attributes of the system.
+
+Section 5 presents potential future enhancements that may be implemented if
+additional development time is available.
+
+% ===========================================================================
+\section{Overall Description}
+
+\subsection{Project Background}
+
+Recent advances in browser technologies have significantly expanded the
+capabilities of frontend web applications. Modern frameworks and graphics
+libraries enable developers to build highly interactive experiences that extend
+beyond traditional user interfaces and static web pages.
+
+Modern technologies allow developers to create real-time 3D environments
+directly within web browsers, making it possible to deliver immersive visual
+experiences without requiring native software installation. As a result,
+frontend development increasingly involves not only interface construction but
+also rendering systems, animation pipelines, user interaction processing, and
+performance optimization.
+
+This project explores the intersection between frontend engineering and
+computer graphics by developing an interactive 3D application that combines
+these technologies within a practical use case.
+
+\subsection{Problem Statement}
+
+Traditional frontend projects often focus on forms, dashboards, and data-driven
+interfaces. While these applications demonstrate common web development skills,
+they provide limited opportunities to explore advanced interaction models and
+real-time rendering techniques.
+
+The challenge addressed by this project is to design and implement a
+browser-based application that demonstrates how modern frontend technologies can
+support complex interactive experiences. The system must process user input in
+real time, manage dynamic objects within a three-dimensional environment,
+provide responsive visual feedback, and maintain acceptable rendering
+performance throughout gameplay.
+
+\subsection{Game Story}
+
+The player begins by accessing the web application and is presented with a
+Welcome Screen. This screen provides a brief introduction to the game and its
+objective, along with a button that allows the player to start a new game
+session.
+
+After selecting the Start Game button, the player enters the gameplay scene. The
+game environment, wave information, gameplay timer, and control panel are
+displayed. Before gameplay begins, a countdown sequence consisting of ``3'',
+``2'', ``1'', and ``Ready'' is shown on the screen. Three seconds after the
+Ready message disappears, the first enemy is spawned.
+
+The player's objective is to defend a house located at the center of the
+battlefield. Enemies continuously advance toward the house using non-linear
+movement patterns with random directional variations. To encourage distributed
+enemy movement and prevent clustering, the front side of the house spans the
+entire width of the battlefield.
+
+The game features three enemy types with different health and movement
+characteristics. Easy enemies have 100 health points and move at the highest
+speed, reaching the house in approximately twenty seconds if not eliminated.
+Medium enemies have 200 health points and require approximately twenty-five
+seconds to reach the house. Hard enemies have 400 health points and move at the
+slowest speed, requiring approximately thirty seconds to reach the house.
+
+To defend the house, the player controls a cannon that fires projectiles toward
+selected locations on the battlefield. When the player clicks on the ground, a
+visual marker represented by an ``X'' appears at the selected location. The
+cannon immediately fires a projectile toward that position. Projectiles travel
+using a ballistic trajectory and land after a weapon-dependent travel time.
+
+Three weapon levels are available throughout the game. The player starts with
+the Basic Weapon, which deals 30 damage per normal shot and generates a stronger
+Big Shot after every three attacks. More powerful weapons are unlocked through
+wave progression, providing increased damage output, faster projectile travel
+times, and enhanced special attacks.
+
+Damage is calculated when a projectile reaches its landing position. Enemies
+located closer to the impact point receive more damage, while enemies farther
+away receive less damage. An enemy positioned exactly at the impact location
+receives the full damage value of the projectile.
+
+The game is divided into three progressively more difficult waves. Each wave
+introduces a predefined combination of enemy types. After all enemies in the
+current wave have been defeated, a transition message displaying the upcoming
+wave number appears for three seconds before the next wave begins.
+
+The player loses immediately if any enemy successfully crosses the defensive
+boundary and reaches the protected area. When this occurs, a defeat overlay is
+displayed along with an option to restart the game.
+
+The player wins by successfully completing all three waves and eliminating every
+enemy. Upon victory, a congratulatory overlay is displayed together with an
+option to return to the Welcome Screen and start a new session.
+
+\subsection{Target Users}
+
+The primary users of the system include students, educators, and individuals
+interested in web development, computer graphics, and interactive application
+design.
+
+The application is designed for users who have access to a modern desktop web
+browser and are capable of interacting with mouse-based controls.
+
+\subsection{System Overview}
+
+The system is a browser-based interactive 3D application in which the player
+must defend a house against incoming monsters.
+
+When the application starts, the player is presented with a complete 3D
+environment containing a house, yard, fence, monsters, and available weapons.
+During gameplay, monsters move toward the protected area while the player uses
+mouse controls to aim and shoot projectiles.
+
+The game is organized into three consecutive waves of increasing difficulty. The
+player begins with a basic weapon and unlocks additional weapons after
+completing each wave. Victory is achieved by eliminating all monsters in the
+final wave, while defeat occurs if any monster reaches the house.
+
+From a technical perspective, the application integrates multiple frontend
+subsystems including scene rendering, input handling, animation control, object
+management, collision processing, state management, and visual feedback
+generation.
+
+\subsection{System Context}
+
+The application operates within a web browser for all gameplay and does not
+require external services to play.
+
+User interactions are processed locally and rendered in real time through WebGL
+using the Three.js framework. All game logic, rendering operations, animation
+updates, and interaction handling are executed on the client side.
+
+Persistent player rankings are handled by a lightweight server-side leaderboard
+service built with Next.js Route Handlers and a local SQLite database. The
+client communicates with this service through a small HTTP API. Aside from this
+leaderboard service, the system does not depend on external authentication
+services or multiplayer infrastructure.
+
+\subsection{Assumptions and Constraints}
+
+The following assumptions and constraints apply to the project:
+
+\begin{itemize}
+  \item Users access the application through a modern browser with WebGL support.
+  \item The application is primarily designed for desktop environments.
+  \item Mouse input is available for aiming and interaction.
+  \item The system is developed as a standalone single-player experience.
+  \item Internet connectivity is only required to access the application.
+\end{itemize}
+
+\subsection{Product Perspective}
+
+The system is developed as an independent web application intended to
+demonstrate the capabilities of modern frontend technologies in creating
+interactive real-time experiences.
+
+Rather than focusing on large-scale game development, the project uses a game
+scenario as a practical framework for exploring frontend architecture, user
+interaction design, 3D rendering techniques, and real-time state management
+within browser environments.
+
+The application serves both as a functional product and as a technical
+demonstration of frontend engineering concepts applied to computer graphics.
+
+\subsection{Product Functions}
+
+The system provides the following major functions:
+
+\begin{itemize}
+  \item Render and manage a complete 3D environment.
+  \item Display and control multiple waves of monsters.
+  \item Allow players to observe, aim, and interact with the scene.
+  \item Support projectile-based shooting mechanics.
+  \item Detect collisions between projectiles and monsters.
+  \item Manage weapon progression and unlocking mechanisms.
+  \item Control game progression, victory conditions, and defeat conditions.
+  \item Provide visual feedback through lighting, animation, and interactive
+        effects.
+  \item Record completed runs and present a ranked player leaderboard.
+\end{itemize}
+
+% ===========================================================================
+\section{System Architecture}
+
+\subsection{Technology Stack}
+
+The application is developed using modern frontend technologies that support
+interactive 3D rendering, real-time user interaction, and maintainable software
+architecture.
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Technology} & \textbf{Purpose} \\
+  \midrule
+  Next.js        & Application framework and routing system \\
+  React          & Component-based user interface architecture \\
+  TypeScript     & Static type checking and maintainability \\
+  Three.js       & 3D rendering engine \\
+  WebGL          & Browser graphics rendering API \\
+  Tailwind CSS   & User interface styling \\
+  GLTF / GLB     & 3D model format \\
+  Route Handlers & Backend HTTP API for the leaderboard (Next.js) \\
+  SQLite         & Server-side leaderboard storage \\
+  Git            & Version control system \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+The selected technology stack enables the development of a browser-based 3D
+interactive application while maintaining scalability, modularity, and code
+quality.
+
+\subsection{Architecture Overview}
+
+The application follows a layered architecture that separates user interface
+concerns, state management, gameplay logic, and rendering responsibilities. This
+separation improves maintainability, scalability, and extensibility.
+
+\begin{center}
+\textbf{UI Layer} $\;\downarrow\;$
+\textbf{State Management Layer} $\;\downarrow\;$
+\textbf{Systems Layer} $\;\downarrow\;$
+\textbf{Rendering Layer}
+\end{center}
+
+\subsubsection{UI Layer}
+The UI Layer contains React components responsible for presenting information and
+receiving user input. Examples include the game canvas, heads-up display,
+control panel, and overlay screens.
+
+\subsubsection{State Management Layer}
+The State Management Layer serves as the single source of truth for the
+application. It stores gameplay data including player information, enemy
+entities, projectiles, scores, wave progression, and game settings.
+
+\subsubsection{Systems Layer}
+The Systems Layer implements gameplay mechanics through specialized modules such
+as movement, collision detection, enemy spawning, shooting logic, and wave
+management.
+
+\subsubsection{Rendering Layer}
+The Rendering Layer manages the Three.js scene, camera configuration, lighting
+setup, model loading, animation updates, and frame rendering.
+
+\subsection{Game Loop Design}
+
+The application operates through a continuous game loop that processes user
+input, updates application state, executes gameplay systems, and renders the
+scene.
+
+\begin{center}
+\textbf{Input} $\;\downarrow\;$
+\textbf{Dispatch Action} $\;\downarrow\;$
+\textbf{Reducer} $\;\downarrow\;$
+\textbf{Update State} $\;\downarrow\;$
+\textbf{Run Systems} $\;\downarrow\;$
+\textbf{Render Scene}
+\end{center}
+
+User actions are converted into application events. These events are processed by
+reducers, resulting in state updates. Gameplay systems then execute based on the
+latest state before the rendering layer updates the visual scene.
+
+\subsection{State Architecture}
+
+The application utilizes centralized state management to ensure predictable
+behavior and consistent synchronization between gameplay systems and user
+interface components.
+
+Example structure:
+
+\begin{lstlisting}[style=tslisting]
+type GameState = {
+  status: "idle" | "playing" | "win" | "lose"
+
+  player: {
+    hp: number
+  }
+
+  playerName: string | null
+
+  enemies: Enemy[]
+  bullets: Bullet[]
+
+  score: number
+  wave: number
+
+  settings: {
+    enemySpeed: number
+    spawnRate: number
+  }
+}
+\end{lstlisting}
+
+The centralized state architecture simplifies data flow and provides a
+consistent mechanism for updating gameplay information across the application.
+
+\subsection{UI Flow Document}
+
+\subsubsection{Main User Flow}
+The primary interaction flow experienced by the user is illustrated below.
+
+\begin{center}
+\textbf{Start Page} $\;\downarrow\;$
+\textbf{Start Game} $\;\downarrow\;$
+\textbf{Gameplay Loop} $\;\downarrow\;$
+\textbf{Wave Progression} $\;\downarrow\;$
+\textbf{Win / Lose Screen} $\;\downarrow\;$
+\textbf{Restart}
+\end{center}
+
+Users begin on the landing page, enter the gameplay environment, progress
+through multiple waves, receive a final outcome, and may restart the game.
+
+\subsubsection{Gameplay Flow}
+The core gameplay interaction cycle is illustrated below.
+
+\begin{center}
+\textbf{Mouse Input} $\;\downarrow\;$
+\textbf{Shoot Action} $\;\downarrow\;$
+\textbf{Bullet Spawn} $\;\downarrow\;$
+\textbf{Collision Detection} $\;\downarrow\;$
+\textbf{Enemy Destroyed} $\;\downarrow\;$
+\textbf{Score Update}
+\end{center}
+
+Players interact with the environment using mouse controls. Successful shooting
+actions generate projectiles that may destroy enemies and increase the player's
+score.
+
+\subsubsection{Runtime Control Flow}
+Runtime settings can dynamically affect gameplay without restarting the
+application.
+
+\begin{center}
+\textbf{User Changes Settings} $\;\downarrow\;$
+\textbf{Dispatch Action} $\;\downarrow\;$
+\textbf{Update GameState} $\;\downarrow\;$
+\textbf{Systems Read New Values} $\;\downarrow\;$
+\textbf{Gameplay Changes Immediately}
+\end{center}
+
+This mechanism allows gameplay parameters to be adjusted while the game remains
+active.
+
+\subsection{State Diagram Document}
+
+\subsubsection{Game State Transition}
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Current State} & \textbf{Event} & \textbf{Next State} \\
+  \midrule
+  Idle    & Start Game        & Playing \\
+  Playing & Victory Condition & Win \\
+  Playing & Defeat Condition  & Lose \\
+  Win     & Restart           & Playing \\
+  Lose    & Restart           & Playing \\
+  \bottomrule
+\end{tabular}
+\captionof{table}{Game State Transitions}
+\end{center}
+
+The application starts in the idle state and transitions to gameplay when the
+user initiates a session. The session concludes with either a victory or defeat
+outcome.
+
+\subsubsection{Enemy State}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{State} & \textbf{Description} \\
+  \midrule
+  Spawn     & Enemy appears in the game world \\
+  Move      & Enemy advances toward the target \\
+  Hit       & Enemy receives damage \\
+  Destroyed & Enemy is removed from the scene \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Each enemy follows a predefined lifecycle from creation to removal.
+
+\subsubsection{Bullet State}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{State} & \textbf{Description} \\
+  \midrule
+  Spawn     & Projectile is created \\
+  Move      & Projectile travels through the scene \\
+  Collision & Projectile hits an enemy \\
+  Remove    & Projectile is removed from memory \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Bullets are created by shooting actions and remain active until a collision
+occurs or cleanup conditions are met.
+
+% ===========================================================================
+\section{Functional Requirements}
+
+\subsection{Game Session Management}
+
+This subsystem controls the complete lifecycle of a gameplay session, from the
+moment a user accesses the website until active gameplay begins.
+
+The subsystem is responsible for displaying the welcome page, creating a new game
+session, initializing all gameplay data, presenting the countdown sequence, and
+activating enemy spawning.
+
+\subsubsection{FR-1 Welcome Screen}
+
+\paragraph{Purpose}
+Provide an entry point to the application and explain the objective of the game
+before gameplay begins.
+
+\paragraph{Preconditions}
+\begin{itemize}
+  \item The user accesses the website.
+  \item The application has loaded successfully.
+\end{itemize}
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The system displays the Welcome Screen.
+  \item The system displays the game title.
+  \item The system displays a short description explaining that the player must
+        defend a house against incoming monsters.
+  \item The system displays a name input field for the leaderboard.
+  \item The system displays a ``Play with Name'' button, a ``Pass'' button (play
+        anonymously), and a ``View Leaderboard'' option.
+  \item The system waits for user interaction.
+  \item The user enters a name and clicks ``Play with Name'', or clicks ``Pass''
+        to play anonymously.
+  \item The system transitions to the Gameplay Scene, carrying the chosen name
+        (or none for an anonymous session).
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-1: No gameplay logic shall execute while the Welcome Screen is active.
+  \item BR-2: No enemies shall spawn while the Welcome Screen is active.
+  \item BR-3: The Start Game controls shall always be visible.
+  \item BR-3a: ``Play with Name'' shall be enabled only when a non-empty name is
+        entered; ``Pass'' shall always be available.
+  \item BR-3b: The Welcome Screen shall allow the player to view the leaderboard
+        before starting a session.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The Welcome Screen is displayed immediately after accessing the website.
+  \item The Start Game button is visible and clickable.
+  \item Clicking Start Game transitions to the Gameplay Scene.
+\end{itemize}
+
+\subsubsection{FR-2 Game Initialization}
+
+\paragraph{Purpose}
+Prepare all gameplay resources and application state before gameplay begins.
+
+\paragraph{Trigger}
+The user clicks the Start Game button.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The system creates a new game session.
+  \item The system initializes the game state.
+  \item The system loads all required 3D assets.
+  \item The system creates the gameplay scene.
+  \item The system creates the player entity.
+  \item The system creates the house entity.
+  \item The system initializes weapon progression.
+  \item The system initializes wave progression.
+  \item The system initializes the gameplay timer.
+  \item The system initializes enemy spawn managers.
+  \item The system displays the gameplay interface.
+\end{enumerate}
+
+\paragraph{Data Initialization}
+The initial state shall be:
+\begin{verbatim}
+GameStatus  = Countdown
+CurrentWave = 1
+CurrentWeapon = Basic
+Score       = 0
+EnemyCount  = 0
+ElapsedTime = 0
+Countdown   = 3
+\end{verbatim}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-4: Previous game data shall not persist.
+  \item BR-5: All enemies from previous sessions shall be removed.
+  \item BR-6: The player always starts with the Basic weapon.
+  \item BR-7: The game always starts at Wave 1.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item All game values are reset.
+  \item Wave progression starts from Wave 1.
+  \item The Basic weapon is equipped.
+\end{itemize}
+
+\subsubsection{FR-3 Countdown Sequence}
+
+\paragraph{Purpose}
+Provide a short preparation period before enemy spawning begins.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The system displays ``3''.
+  \item After 1 second, the system displays ``2''.
+  \item After 1 second, the system displays ``1''.
+  \item After 1 second, the system displays ``Ready''.
+  \item After 1 second, the Ready message disappears.
+  \item The system waits 3 additional seconds.
+  \item The first enemy is spawned.
+  \item The game state changes from Countdown to Playing.
+\end{enumerate}
+
+\paragraph{Timing Rules}
+\begin{itemize}
+  \item TR-1: Each countdown value shall remain visible for exactly 1 second.
+  \item TR-2: Enemy spawning is disabled during the countdown.
+  \item TR-3: Enemy spawning is disabled while the Ready message is visible.
+  \item TR-4: The first enemy shall appear exactly 3 seconds after the Ready
+        message disappears.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Countdown values appear in the correct order.
+  \item Enemies do not appear before the countdown finishes.
+  \item The first enemy appears after the required delay.
+\end{itemize}
+
+\subsection{Gameplay Environment}
+
+The Gameplay Environment subsystem defines the virtual battlefield where all
+gameplay interactions occur. It is responsible for creating the playable area,
+positioning the protected house, defining enemy movement boundaries, and
+providing valid target locations for player attacks.
+
+The environment remains active throughout the entire gameplay session and serves
+as the reference space for all entities including enemies, projectiles, weapons,
+and user interactions.
+
+\subsubsection{FR-5 Battlefield Initialization}
+
+\paragraph{Purpose}
+Create the playable area used during gameplay.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The system creates the battlefield.
+  \item The system loads environmental models.
+  \item The system loads the house model.
+  \item The system loads fence models.
+  \item The system positions all environment objects.
+  \item The system enables gameplay interactions.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-8: The battlefield shall remain visible throughout gameplay.
+  \item BR-9: Environmental objects shall not be removed during a session.
+  \item BR-10: The house shall always remain at the center of the battlefield.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The battlefield loads successfully.
+  \item The house is visible.
+  \item The fence is visible.
+\end{itemize}
+
+\subsubsection{FR-6 House Placement}
+
+\paragraph{Purpose}
+Define the protected target that players must defend.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-11: The house shall be positioned at the center of the battlefield.
+  \item BR-12: The front side of the house shall span the width of the playable
+        area.
+  \item BR-13: The house shall act as the final objective for enemy movement.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item All enemies move toward the house.
+  \item The house remains visible throughout gameplay.
+\end{itemize}
+
+\subsubsection{FR-7 Target Area Interaction}
+
+\paragraph{Purpose}
+Provide valid locations where players can aim and attack.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-14: Players may only target positions located inside the battlefield.
+  \item BR-15: Mouse clicks outside the battlefield shall be ignored.
+  \item BR-16: Every valid click shall generate a target position.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Valid clicks generate target positions.
+  \item Invalid clicks do not trigger attacks.
+\end{itemize}
+
+\subsection{Enemy System}
+
+The Enemy System manages enemy creation, movement, health, damage reception, and
+destruction.
+
+Three enemy classes are supported.
+
+\subsubsection{FR-8 Enemy Types}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-17: The Easy enemy shall have 100 HP.
+  \item BR-18: The Easy enemy shall reach the house in approximately 20 seconds
+        if uninterrupted.
+  \item BR-19: The Medium enemy shall have 200 HP.
+  \item BR-20: The Medium enemy shall reach the house in approximately 25 seconds
+        if uninterrupted.
+  \item BR-21: The Hard enemy shall have 400 HP.
+  \item BR-22: The Hard enemy shall reach the house in approximately 30 seconds
+        if uninterrupted.
+\end{itemize}
+
+\subsubsection{FR-9 Enemy Spawn}
+
+\paragraph{Purpose}
+Create enemies during active gameplay.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-23: The first enemy shall appear 3 seconds after the Ready message
+        disappears.
+  \item BR-24: Enemies shall spawn outside the protected area.
+  \item BR-25: Spawned enemies shall immediately enter the Move state.
+\end{itemize}
+
+\subsubsection{FR-10 Enemy Movement}
+
+\paragraph{Purpose}
+Move enemies toward the house.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-26: Enemies shall continuously move toward the house.
+  \item BR-27: Enemy movement shall not follow a perfectly straight path.
+  \item BR-28: Small random directional offsets shall be applied during movement.
+  \item BR-29: Enemy movement shall appear natural and distributed across the
+        battlefield.
+  \item BR-30: Enemies shall not intentionally cluster into a single point.
+\end{itemize}
+
+\subsubsection{FR-11 Enemy Health}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-31: Enemies shall lose health when receiving damage.
+  \item BR-32: Enemy health shall never exceed the maximum value assigned to its
+        type.
+  \item BR-33: An enemy shall be destroyed when health reaches zero.
+\end{itemize}
+
+\subsection{Weapon System}
+
+The Weapon System controls weapon progression and damage capabilities.
+
+\subsubsection{FR-12 Basic Weapon}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-34: The Basic weapon shall be the starting weapon.
+  \item BR-35: Normal attacks shall deal 80 damage.
+  \item BR-36: Every third normal attack shall generate one Big Shot.
+  \item BR-37: The Big Shot shall deal 100 damage.
+  \item BR-38: The Basic weapon shall have the slowest projectile travel time.
+  \item BR-130: The Basic weapon shall require 2 seconds to reload before it can
+        fire again.
+\end{itemize}
+
+\subsubsection{FR-13 Medium Weapon}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-39: The Medium weapon shall be unlocked after completing Wave 1.
+  \item BR-40: Normal attacks shall deal 100 damage.
+  \item BR-41: Every fourth normal attack shall generate one Big Shot.
+  \item BR-42: The Big Shot shall deal 120 damage.
+  \item BR-43: Projectile travel speed shall be faster than the Basic weapon.
+  \item BR-131: The Medium weapon shall require 2 seconds to reload before it can
+        fire again.
+\end{itemize}
+
+\subsubsection{FR-14 Advanced Weapon}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-44: The Advanced weapon shall be unlocked after completing Wave 2.
+  \item BR-45: Each attack shall fire two projectiles.
+  \item BR-46: Each projectile shall deal 150 damage.
+  \item BR-47: Every fifth normal attack shall generate one Big Shot.
+  \item BR-48: The Big Shot shall deal 170 damage.
+  \item BR-49: Projectile travel speed shall be the fastest among all weapons.
+  \item BR-132: The Advanced weapon shall require 3 seconds to reload before it
+        can fire again.
+\end{itemize}
+
+\paragraph{Weapon Reload Times}
+\begin{center}
+\begin{tabular}{lc}
+  \toprule
+  \textbf{Weapon} & \textbf{Reload Time} \\
+  \midrule
+  Basic    & 2 Seconds \\
+  Medium   & 2 Seconds \\
+  Advanced & 3 Seconds \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+More powerful weapons generally reload more slowly, balancing their higher damage
+and additional projectiles.
+
+\subsection{Shooting and Damage System}
+
+The Shooting and Damage System manages all combat interactions between the player
+and enemies. It is responsible for processing mouse input, determining target
+locations, spawning projectiles, simulating projectile trajectories, calculating
+damage, and updating enemy health.
+
+This subsystem represents the primary gameplay interaction mechanism and directly
+affects player success and game progression.
+
+\subsubsection{FR-15 Target Selection}
+
+\paragraph{Purpose}
+Allow players to select a target location within the battlefield.
+
+\paragraph{Trigger}
+The player presses the left mouse button.
+
+\paragraph{Preconditions}
+\begin{itemize}
+  \item The game state is Playing.
+  \item The click position is located inside the playable battlefield.
+\end{itemize}
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The player clicks a location on the battlefield.
+  \item The system performs a raycast from the camera through the mouse position.
+  \item The system determines the world-space intersection point.
+  \item The system validates that the intersection point is located inside the
+        battlefield.
+  \item The system stores the target position.
+  \item The system displays a visual target marker (``X'') at the selected
+        position.
+  \item The system immediately triggers a shooting action.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-50: Only locations inside the battlefield shall be considered valid
+        targets.
+  \item BR-51: Invalid clicks shall be ignored.
+  \item BR-52: A target marker shall appear immediately after a valid click.
+  \item BR-53: The target marker shall indicate the intended projectile landing
+        position.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Valid clicks generate a target marker.
+  \item Invalid clicks do not generate a target marker.
+  \item The marker appears at the selected position.
+\end{itemize}
+
+\subsubsection{FR-16 Projectile Creation}
+
+\paragraph{Purpose}
+Create projectiles when the player performs a shooting action.
+
+\paragraph{Trigger}
+A valid target location is selected.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The system identifies the currently equipped weapon.
+  \item The system determines projectile properties.
+  \item The system creates one or more projectile entities.
+  \item The system assigns a launch position.
+  \item The system assigns a target position.
+  \item The projectile enters the Moving state.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-54: The projectile shall be spawned immediately after a valid click.
+  \item BR-55: The projectile origin shall be the weapon position.
+  \item BR-56: The projectile target shall be the selected target position.
+  \item BR-57: Advanced Weapon attacks shall spawn two projectiles.
+  \item BR-133: A shooting action shall be ignored while the equipped weapon is
+        reloading; no projectile or target marker shall be created until the
+        reload completes (BR-130..132).
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Projectiles are created successfully.
+  \item Projectile quantity matches weapon specifications.
+\end{itemize}
+
+\subsubsection{FR-17 Projectile Movement}
+
+\paragraph{Purpose}
+Simulate projectile travel from the weapon to the target location.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-58: Projectiles shall follow an arcing trajectory.
+  \item BR-59: Projectiles shall not move in a straight line.
+  \item BR-60: The projectile shall always land at the selected target position.
+  \item BR-61: Projectile travel time depends on the equipped weapon.
+\end{itemize}
+
+\paragraph{Projectile Travel Speeds}
+\begin{center}
+\begin{tabular}{lc}
+  \toprule
+  \textbf{Weapon} & \textbf{Travel Speed} \\
+  \midrule
+  Basic    & Slow \\
+  Medium   & Medium \\
+  Advanced & Fast \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Projectiles visibly travel through the air.
+  \item Projectiles land at the selected target location.
+  \item Faster weapons reach the target sooner.
+\end{itemize}
+
+\subsubsection{FR-18 Big Shot Mechanic}
+
+\paragraph{Purpose}
+Provide periodic high-damage attacks.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-62: Each weapon shall maintain an attack counter.
+  \item BR-63: Only normal attacks contribute to the counter.
+  \item BR-64: Reaching the required attack count shall prepare the next shot as
+        a Big Shot.
+\end{itemize}
+
+\paragraph{Big Shot Requirements}
+\begin{center}
+\begin{tabular}{lcc}
+  \toprule
+  \textbf{Weapon} & \textbf{Trigger Count} & \textbf{Damage} \\
+  \midrule
+  Basic    & 3 Shots & 100 \\
+  Medium   & 4 Shots & 120 \\
+  Advanced & 5 Shots & 170 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Big Shots are generated at the correct intervals.
+  \item Big Shots deal the correct amount of damage.
+\end{itemize}
+
+\subsubsection{FR-19 Damage Calculation}
+
+\paragraph{Purpose}
+Determine the amount of damage applied to enemies.
+
+\paragraph{Trigger}
+A projectile reaches its target position.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The projectile lands at the target position.
+  \item The system calculates the distance between each enemy and the landing
+        position.
+  \item The system determines damage based on distance.
+  \item The system reduces enemy health.
+  \item The system checks whether the enemy has been destroyed.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-65: Damage is calculated only when the projectile lands.
+  \item BR-66: Damage is based on the enemy position at the moment of impact.
+  \item BR-67: Enemies closer to the impact point receive more damage.
+  \item BR-68: Enemies farther from the impact point receive less damage.
+  \item BR-69: An enemy positioned exactly at the impact point receives full
+        weapon damage.
+\end{itemize}
+
+\paragraph{Damage Formula}
+Let:
+\[ \text{Distance} = d \qquad \text{MaxRadius} = R \qquad \text{WeaponDamage} = D \]
+
+Damage shall be calculated as:
+\[ \text{Damage} = D \times \left(1 - \frac{d}{R}\right) \quad \text{for} \quad 0 \le d \le R \]
+
+If $d > R$ then:
+\[ \text{Damage} = 0 \]
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Enemies at the center of impact receive full damage.
+  \item Damage decreases as distance increases.
+  \item Enemies outside the damage radius receive no damage.
+\end{itemize}
+
+\subsubsection{FR-20 Enemy Destruction}
+
+\paragraph{Purpose}
+Remove enemies that have been defeated.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-70: Enemy health shall never be less than zero.
+  \item BR-71: An enemy shall enter the Destroyed state when health reaches zero.
+  \item BR-72: Destroyed enemies shall be removed from the active enemy list.
+  \item BR-73: Destroyed enemies shall no longer participate in movement or
+        collision processing.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Defeated enemies are removed from gameplay.
+  \item Destroyed enemies no longer receive updates.
+\end{itemize}
+
+\subsection{Wave Progression System}
+
+The Wave Progression System manages enemy composition, enemy spawning schedules,
+weapon progression, and transitions between waves.
+
+The game consists of three waves. Each wave contains a predefined number of
+enemies with increasing difficulty. A wave is considered completed when all
+enemies belonging to that wave have been destroyed.
+
+\subsubsection{FR-21 Wave Configuration}
+
+\paragraph{Purpose}
+Define the composition of each gameplay wave.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-74: The game shall contain exactly three waves.
+  \item BR-75: Wave 1 shall contain two Easy enemies and one Medium enemy.
+  \item BR-76: Wave 2 shall contain two Easy enemies, two Medium enemies, and one
+        Hard enemy.
+  \item BR-77: Wave 3 shall contain two Easy enemies, two Medium enemies, and
+        three Hard enemies.
+  \item BR-78: Enemy quantities shall remain fixed throughout all game sessions.
+\end{itemize}
+
+\paragraph{Wave Composition}
+\begin{center}
+\begin{tabular}{ccccc}
+  \toprule
+  \textbf{Wave} & \textbf{Easy} & \textbf{Medium} & \textbf{Hard} & \textbf{Total} \\
+  \midrule
+  1 & 2 & 1 & 0 & 3 \\
+  2 & 2 & 2 & 1 & 5 \\
+  3 & 2 & 2 & 3 & 7 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Each wave contains the correct enemy composition.
+  \item Enemy quantities match the predefined configuration.
+\end{itemize}
+
+\subsubsection{FR-22 Enemy Spawn Scheduling}
+
+\paragraph{Purpose}
+Control the timing of enemy creation.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-79: Easy enemies shall spawn every 3 seconds.
+  \item BR-80: Medium enemies shall spawn every 4 seconds.
+  \item BR-81: Hard enemies shall spawn every 5 seconds.
+  \item BR-82: Enemies shall spawn sequentially.
+  \item BR-83: A spawned enemy shall immediately enter the Move state.
+  \item BR-84: Enemy spawning shall stop when all enemies belonging to the
+        current wave have been created.
+\end{itemize}
+
+\paragraph{Spawn Timing}
+\begin{center}
+\begin{tabular}{lc}
+  \toprule
+  \textbf{Enemy Type} & \textbf{Spawn Interval} \\
+  \midrule
+  Easy   & 3 Seconds \\
+  Medium & 4 Seconds \\
+  Hard   & 5 Seconds \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Enemies appear according to the specified schedule.
+  \item No enemy spawns before its designated interval.
+\end{itemize}
+
+\subsubsection{FR-23 Wave Completion}
+
+\paragraph{Purpose}
+Determine when a wave has been successfully completed.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-85: A wave shall be completed when all enemies assigned to the wave
+        have been destroyed.
+  \item BR-86: A wave shall not complete while at least one enemy remains alive.
+  \item BR-87: Enemy spawn schedules shall stop immediately after wave completion.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The system correctly detects wave completion.
+  \item Wave completion occurs only after all enemies are eliminated.
+\end{itemize}
+
+\subsubsection{FR-24 Wave Transition}
+
+\paragraph{Purpose}
+Transition from the current wave to the next wave.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The current wave is completed.
+  \item The system displays a wave transition message.
+  \item The transition message remains visible for 3 seconds.
+  \item The next wave configuration is loaded.
+  \item Enemy spawning begins for the next wave.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-88: The message shall display the upcoming wave number.
+  \item BR-89: The message shall remain visible for exactly 3 seconds.
+  \item BR-90: Enemy spawning shall not occur while the transition message is
+        displayed.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The transition message appears after every completed wave.
+  \item The next wave begins after the required delay.
+\end{itemize}
+
+\subsubsection{FR-25 Weapon Progression}
+
+\paragraph{Purpose}
+Reward players with stronger weapons as they progress.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-91: The player shall start the game with the Basic Weapon.
+  \item BR-92: The Medium Weapon shall be unlocked after completing Wave 1.
+  \item BR-93: The Advanced Weapon shall be unlocked after completing Wave 2.
+  \item BR-94: Newly unlocked weapons shall automatically become active.
+  \item BR-95: Weapon progression shall reset when a new game starts.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Weapon upgrades occur at the correct wave boundaries.
+  \item The active weapon matches the current progression level.
+\end{itemize}
+
+\subsection{Runtime Control System}
+
+The Runtime Control System allows players to manage the execution state of an
+active gameplay session without leaving the game environment.
+
+The subsystem provides controls for pausing, resuming, and restarting the game
+while maintaining consistent synchronization between the user interface and the
+application state.
+
+\subsubsection{FR-26 Pause Functionality}
+
+\paragraph{Purpose}
+Temporarily suspend gameplay while preserving the current game state.
+
+\paragraph{Trigger}
+The player presses the Pause button.
+
+\paragraph{Preconditions}
+\begin{itemize}
+  \item The game state is Playing.
+\end{itemize}
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The player presses Pause.
+  \item The system changes the game state to Paused.
+  \item Enemy movement is suspended.
+  \item Enemy spawning is suspended.
+  \item Projectile movement is suspended.
+  \item Gameplay timers are suspended.
+  \item The Pause overlay is displayed.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-96: No gameplay updates shall occur while the game is paused.
+  \item BR-97: The current game state shall be preserved.
+  \item BR-98: User interface elements shall remain visible.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Enemy movement stops immediately.
+  \item Projectiles stop immediately.
+  \item Gameplay timers stop updating.
+\end{itemize}
+
+\subsubsection{FR-27 Resume Functionality}
+
+\paragraph{Purpose}
+Continue gameplay from a paused state.
+
+\paragraph{Trigger}
+The player presses the Resume button.
+
+\paragraph{Preconditions}
+\begin{itemize}
+  \item The game state is Paused.
+\end{itemize}
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The player presses Resume.
+  \item The system changes the game state to Playing.
+  \item Enemy movement resumes.
+  \item Enemy spawning resumes.
+  \item Projectile movement resumes.
+  \item Gameplay timers resume.
+  \item The Pause overlay is removed.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-99: Gameplay shall continue from the exact state prior to pausing.
+  \item BR-100: No game data shall be reset during resume.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Gameplay continues from the previous state.
+  \item Enemy and projectile movement resume correctly.
+\end{itemize}
+
+\subsubsection{FR-28 Restart Functionality}
+
+\paragraph{Purpose}
+Start a completely new gameplay session.
+
+\paragraph{Trigger}
+The player presses the Restart button.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The player presses Restart.
+  \item The current session is terminated.
+  \item All active enemies are removed.
+  \item All active projectiles are removed.
+  \item Wave progression is reset.
+  \item Weapon progression is reset.
+  \item The gameplay timer is reset.
+  \item A new game session is initialized.
+  \item The countdown sequence begins.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-101: Restart shall always begin at Wave 1.
+  \item BR-102: Restart shall always equip the Basic Weapon.
+  \item BR-103: No gameplay data shall persist between sessions.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item A completely new game session begins.
+  \item Previous session data is removed.
+\end{itemize}
+
+\subsection{Victory and Defeat System}
+
+The Victory and Defeat System determines the outcome of a gameplay session and
+presents the appropriate end-game interface to the player.
+
+\subsubsection{FR-29 Defeat Condition}
+
+\paragraph{Purpose}
+Detect when the player fails to defend the house.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-104: A defeat shall occur when any enemy crosses the battlefield
+        boundary protecting the house.
+  \item BR-105: Defeat shall be triggered immediately upon boundary violation.
+  \item BR-106: Enemy health and remaining enemies shall not affect defeat
+        evaluation.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The game immediately ends when an enemy reaches the protected area.
+  \item The game state changes to Lose.
+\end{itemize}
+
+\subsubsection{FR-30 Defeat Screen}
+
+\paragraph{Purpose}
+Inform the player that the game has been lost.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item A defeat condition is detected.
+  \item The game state changes to Lose.
+  \item All gameplay updates stop.
+  \item A Lose overlay is displayed.
+  \item A Restart button is displayed.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-107: Enemy spawning shall stop.
+  \item BR-108: Enemy movement shall stop.
+  \item BR-109: Projectile updates shall stop.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The Lose overlay is displayed.
+  \item The Restart button is available.
+\end{itemize}
+
+\subsubsection{FR-31 Victory Condition}
+
+\paragraph{Purpose}
+Detect successful completion of the game.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-110: Victory shall occur after Wave 3 has been completed.
+  \item BR-111: All enemies belonging to Wave 3 shall be destroyed.
+  \item BR-112: No active enemies may remain in the game world.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Victory is triggered only after all Wave 3 enemies are defeated.
+  \item The game state changes to Win.
+\end{itemize}
+
+\subsubsection{FR-32 Victory Screen}
+
+\paragraph{Purpose}
+Inform the player that the game has been successfully completed.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The victory condition is detected.
+  \item The game state changes to Win.
+  \item Gameplay updates stop.
+  \item A Victory overlay is displayed.
+  \item A Return to Start Page button is displayed.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-113: Enemy spawning shall stop.
+  \item BR-114: Enemy movement shall stop.
+  \item BR-115: Projectile updates shall stop.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The Victory overlay is displayed.
+  \item The Return to Start Page button is available.
+\end{itemize}
+
+\subsubsection{FR-33 Return to Start Page}
+
+\paragraph{Purpose}
+Allow players to return to the Welcome Screen after winning.
+
+\paragraph{Trigger}
+The player presses the Return to Start Page button.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The player presses Return to Start Page.
+  \item The current session is terminated.
+  \item All gameplay data is cleared.
+  \item The Welcome Screen is displayed.
+\end{enumerate}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The Welcome Screen is displayed.
+  \item A new session can be started.
+\end{itemize}
+
+\subsection{Heads-Up Display (HUD)}
+
+The Heads-Up Display (HUD) provides real-time gameplay information and controls
+without interrupting gameplay.
+
+The HUD shall remain visible throughout active gameplay and shall continuously
+synchronize with the current game state.
+
+\subsubsection{FR-30 Wave Information Display}
+
+\paragraph{Purpose}
+Display the current progression of the game.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-96: The current wave number shall be displayed.
+  \item BR-97: The displayed wave shall update immediately after a wave
+        transition.
+  \item BR-98: The wave indicator shall remain visible during gameplay.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The correct wave number is displayed.
+  \item Wave updates are reflected immediately.
+\end{itemize}
+
+\subsubsection{FR-31 Gameplay Timer}
+
+\paragraph{Purpose}
+Display the elapsed gameplay time.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-99: The timer shall start when gameplay enters the Playing state.
+  \item BR-100: The timer shall update every second.
+  \item BR-101: The timer shall pause when the game is paused.
+  \item BR-102: The timer shall stop when the game ends.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The timer increases correctly.
+  \item The timer pauses and resumes correctly.
+\end{itemize}
+
+\subsection{Rendering System}
+
+The Rendering System is responsible for displaying all visual elements of the
+game world using Three.js and WebGL.
+
+The subsystem converts application state into a visual representation that can be
+observed and interacted with by the player.
+
+\subsubsection{FR-32 Scene Rendering}
+
+\paragraph{Purpose}
+Render the complete gameplay environment.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-103: The battlefield shall be rendered continuously.
+  \item BR-104: The house shall be rendered throughout gameplay.
+  \item BR-105: Enemy entities shall be rendered while active.
+  \item BR-106: Projectiles shall be rendered while active.
+  \item BR-107: Destroyed entities shall no longer be rendered.
+\end{itemize}
+
+\subsubsection{FR-33 Camera Management}
+
+\paragraph{Purpose}
+Provide a consistent view of the battlefield.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-108: The application shall use a perspective camera.
+  \item BR-109: The entire battlefield shall remain visible.
+  \item BR-110: Camera positioning shall support accurate target selection.
+\end{itemize}
+
+\subsubsection{FR-34 Lighting System}
+
+\paragraph{Purpose}
+Provide visual clarity and depth perception.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-111: Ambient lighting shall illuminate the scene.
+  \item BR-112: Directional lighting shall simulate sunlight.
+  \item BR-113: Major scene objects shall support shadow rendering.
+\end{itemize}
+
+\subsubsection{FR-35 Animation Rendering}
+
+\paragraph{Purpose}
+Display visual motion of entities.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-114: Enemy movement shall be animated.
+  \item BR-115: Projectile movement shall be animated.
+  \item BR-116: Target markers shall be rendered immediately after selection.
+  \item BR-117: Animations shall update every render frame.
+\end{itemize}
+
+\subsubsection{FR-40 Damage Hit Feedback}
+
+\paragraph{Purpose}
+Give the player clear visual confirmation that a projectile damaged an enemy.
+
+\paragraph{Trigger}
+An enemy's health is reduced by a projectile impact.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item A projectile lands and applies area-of-effect damage.
+  \item Each enemy that loses health briefly flashes a red glow.
+  \item The glow fades out over a short duration.
+  \item The enemy resumes its normal appearance.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-134: An enemy that receives damage shall display a red glow (hit flash).
+  \item BR-135: The hit flash shall be brief and fade out automatically.
+  \item BR-136: Enemies that receive no damage shall not flash.
+  \item BR-137: The hit flash shall be purely visual and shall not affect enemy
+        health, movement, or collision.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Damaged enemies visibly flash red on impact.
+  \item The flash fades shortly after the hit.
+  \item Enemies outside the blast radius do not flash.
+\end{itemize}
+
+\subsection{Physics and Collision System}
+
+The Physics and Collision System manages projectile movement, impact detection,
+and spatial calculations required by gameplay mechanics.
+
+\subsubsection{FR-36 Projectile Physics}
+
+\paragraph{Purpose}
+Simulate projectile travel through the battlefield.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-118: Projectiles shall follow a ballistic trajectory.
+  \item BR-119: Projectile travel time shall depend on the equipped weapon.
+  \item BR-120: Projectiles shall land exactly at the selected target position.
+\end{itemize}
+
+\subsubsection{FR-37 Impact Detection}
+
+\paragraph{Purpose}
+Detect projectile arrival at the target position.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-121: An impact event shall occur when a projectile reaches its target
+        position.
+  \item BR-122: Impact processing shall execute only once per projectile.
+  \item BR-123: The projectile shall enter the Remove state after impact.
+\end{itemize}
+
+\subsubsection{FR-38 Area-of-Effect Collision}
+
+\paragraph{Purpose}
+Determine which enemies are affected by an impact.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-124: The system shall calculate the distance between the impact point
+        and every active enemy.
+  \item BR-125: Enemies within the effect radius shall receive damage.
+  \item BR-126: Enemies outside the effect radius shall receive no damage.
+\end{itemize}
+
+\subsubsection{FR-39 Entity Cleanup}
+
+\paragraph{Purpose}
+Remove inactive entities from the game world.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-127: Destroyed enemies shall be removed.
+  \item BR-128: Expired projectiles shall be removed.
+  \item BR-129: Removed entities shall no longer participate in updates or
+        rendering.
+\end{itemize}
+
+\subsection{Leaderboard and Ranking System}
+
+The Leaderboard and Ranking System records completed runs and ranks players
+against one another. It spans the client (name capture, result display) and a
+lightweight server-side service that persists scores and returns them in ranked
+order.
+
+A run is described by the player's name, the total time taken, the furthest wave
+reached, and whether all three waves were cleared. The ranking favours players
+who clear the game fastest, while still placing players who progressed further
+above those who did not.
+
+\subsubsection{FR-42 Player Name Entry}
+
+\paragraph{Purpose}
+Capture an optional display name so a run can be attributed to the player on the
+leaderboard.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The Welcome Screen presents a name input and two ways to start: ``Play
+        with Name'' and ``Pass''.
+  \item The player either enters a name and starts a recorded session, or chooses
+        ``Pass'' to play anonymously.
+  \item The chosen name is retained for the session.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-144: The Welcome Screen shall provide a field for entering a player
+        name.
+  \item BR-145: ``Play with Name'' shall start a session whose result is recorded
+        under the entered name.
+  \item BR-146: ``Pass'' shall start an anonymous session that is not recorded.
+  \item BR-147: The entered name shall be retained across Restart so a retry is
+        still recorded, and shall be cleared on return to the Welcome Screen.
+  \item BR-148: The name shall be trimmed and limited to a maximum of 20
+        characters.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item A named session starts only when a non-empty name is entered.
+  \item An anonymous session can always be started with ``Pass''.
+\end{itemize}
+
+\subsubsection{FR-43 Run Recording}
+
+\paragraph{Purpose}
+Persist the outcome of a finished run so it can appear on the leaderboard.
+
+\paragraph{Trigger}
+The game reaches the Win or Lose state during a named session.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The system determines the total play time, the furthest wave reached, and
+        whether the game was won.
+  \item The system submits the run to the leaderboard service through the HTTP
+        API.
+  \item The service validates and stores the run.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-149: A run shall be recorded exactly once, at game end (win or lose).
+  \item BR-150: Anonymous (Pass) runs shall not be recorded.
+  \item BR-151: The recorded time shall be the total active play time of the
+        session.
+  \item BR-152: The recorded wave shall be the furthest wave reached, and the win
+        flag shall be true only when all three waves are cleared.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Finishing a named game adds exactly one entry to the leaderboard.
+  \item Anonymous games add no entry.
+\end{itemize}
+
+\subsubsection{FR-44 Ranking Rules}
+
+\paragraph{Purpose}
+Define a single, consistent order for all recorded runs.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-153: Players who clear all three waves shall rank above players who do
+        not.
+  \item BR-154: Among players who cleared the game, a shorter completion time
+        shall rank higher.
+  \item BR-155: Among players who did not clear the game, runs shall be grouped by
+        furthest wave reached, with higher waves ranking above lower waves.
+  \item BR-156: Players who did not clear the game shall not be ranked by time;
+        within the same wave, more recent runs shall appear first.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Winners appear first, ordered by fastest time.
+  \item Non-winners follow, grouped from the deepest wave to the shallowest.
+\end{itemize}
+
+\subsubsection{FR-45 Leaderboard Display}
+
+\paragraph{Purpose}
+Show the ranked standings to the player.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item The system requests the ranked leaderboard from the service.
+  \item The system displays, for each entry, its rank, name, result (cleared or
+        wave reached), and time.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-157: The leaderboard shall display rank, name, result, and time for
+        each entry.
+  \item BR-158: The leaderboard shall be viewable from the Welcome Screen and
+        shall be shown on the Win and Lose screens.
+  \item BR-159: When shown after a game, the player's most recent run shall be
+        highlighted.
+  \item BR-160: The leaderboard shall present clear loading, empty, and error
+        states.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item The board reflects the ranking rules (FR-44).
+  \item The player's newly recorded run is highlighted on the end screen.
+\end{itemize}
+
+\subsubsection{FR-46 Leaderboard Service}
+
+\paragraph{Purpose}
+Provide persistent storage and a defined interface for leaderboard data.
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-161: Scores shall be stored in a persistent server-side data store.
+  \item BR-162: The client shall access the store only through the HTTP API: one
+        operation to record a run and one to retrieve the ranked list.
+  \item BR-163: The service shall validate submitted runs and reject malformed
+        data.
+  \item BR-164: Retrieval shall return entries already ordered by the ranking
+        rules (FR-44).
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Valid runs are stored and retrievable; malformed submissions are rejected.
+  \item The retrieved list is already in ranked order.
+\end{itemize}
+
+\subsection{Enemy Health Indicator}
+
+\subsubsection{FR-41 Enemy Health Bar}
+
+\paragraph{Purpose}
+Show each enemy's remaining health directly above it, so the player can gauge how
+close a monster is to being destroyed and prioritize targets.
+
+\paragraph{Main Flow}
+\begin{enumerate}
+  \item When an enemy appears, a health bar is displayed above it.
+  \item The bar always faces the camera.
+  \item The filled portion reflects the enemy's current health as a fraction of
+        its maximum health.
+  \item The fill color transitions from green through yellow to red as the enemy
+        loses health.
+  \item The bar follows the enemy as it moves and is removed when the enemy is
+        destroyed.
+\end{enumerate}
+
+\paragraph{Business Rules}
+\begin{itemize}
+  \item BR-138: A health bar shall be displayed above every enemy from the moment
+        it spawns.
+  \item BR-139: The filled length of the bar shall be proportional to the enemy's
+        current health divided by its maximum health.
+  \item BR-140: The fill color shall transition from green (full health) through
+        yellow to red (low health).
+  \item BR-141: The health bar shall always face the camera.
+  \item BR-142: The health bar shall follow the enemy and shall be removed when
+        the enemy is destroyed.
+  \item BR-143: The health bar shall be purely visual and shall not affect enemy
+        health, movement, or collision.
+\end{itemize}
+
+\paragraph{Acceptance Criteria}
+\begin{itemize}
+  \item Every enemy displays a health bar as soon as it spawns.
+  \item The bar shrinks and changes color as the enemy loses health.
+  \item The bar disappears when the enemy is destroyed.
+\end{itemize}
+
+% ===========================================================================
+\section{Non-Functional Requirements}
+
+\subsection{Performance Requirements}
+
+The application shall maintain an average frame rate of at least 30 FPS under
+normal gameplay conditions on a modern desktop browser.
+
+The system shall render user interactions, animations, and scene updates with
+minimal perceptible delay.
+
+The loading time for the initial game scene should not exceed 10 seconds under
+normal network conditions.
+
+The application shall efficiently manage 3D assets and memory usage to prevent
+significant performance degradation during gameplay.
+
+The system shall support real-time updates of game entities, animations, and
+visual effects without causing noticeable interruptions to the user experience.
+
+\subsection{Usability Requirements}
+
+The application shall provide an intuitive user interface that allows users to
+understand the gameplay mechanics without extensive instructions.
+
+User interactions shall be performed using standard mouse controls commonly
+available on desktop devices.
+
+The visual feedback generated by the system shall clearly indicate successful
+actions, collisions, and game state transitions.
+
+The interface shall present relevant gameplay information through HUD elements and
+overlay screens when necessary.
+
+The system shall provide clear indications of victory, defeat, and game
+progression.
+
+\subsection{Reliability Requirements}
+
+The application shall maintain stable operation throughout a complete gameplay
+session.
+
+Unexpected user inputs shall not cause application crashes or unresponsive states.
+
+The system shall correctly manage game state transitions between initialization,
+active gameplay, pause, victory, and defeat states.
+
+The application shall ensure that game entities are properly created, updated, and
+removed during runtime.
+
+The system shall recover gracefully from asset loading failures whenever possible.
+
+\subsection{Compatibility Requirements}
+
+The application shall support modern desktop web browsers that provide WebGL
+support.
+
+The system shall be compatible with recent versions of Google Chrome, Microsoft
+Edge, Mozilla Firefox, and other Chromium-based browsers.
+
+The application shall operate without requiring users to install additional
+software or plugins.
+
+The system shall be deployable as a standard web application using the Next.js
+framework.
+
+\subsection{Maintainability Requirements}
+
+The source code shall follow a modular architecture to facilitate future
+development and maintenance activities.
+
+Application logic, rendering logic, user interface components, and state
+management mechanisms shall be separated into independent modules whenever
+possible.
+
+The project shall utilize TypeScript to improve code reliability, readability, and
+maintainability through static type checking.
+
+Reusable components and utility functions shall be organized to minimize code
+duplication.
+
+The codebase shall support future feature additions with minimal impact on
+existing functionality.
+
+% ===========================================================================
+\section{Future Enhancements}
+
+Although the current implementation focuses on the core gameplay and frontend
+architecture defined in the project proposal, the system has been designed with
+extensibility in mind. Several enhancements may be considered in future
+development phases.
+
+\subsection{Ranking Enhancements}
+
+The existing leaderboard (Leaderboard and Ranking System) may be extended to
+compare player performance in richer ways.
+
+Additional metrics such as accuracy, enemies defeated, and per-weapon statistics
+could be recorded alongside the existing time and wave data, and presented
+through expanded leaderboard views and filters.
+
+\subsection{Backend Integration}
+
+The existing leaderboard service may be expanded into a fuller backend to support
+online functionality beyond a single device.
+
+Potential features include player accounts, game progress tracking, statistics
+collection, cloud-based configuration management, and cross-device
+synchronization of leaderboard records.
+
+The expansion could migrate the current local store to a hosted database while
+preserving the existing HTTP API and frontend architecture.
+
+\subsection{Additional Monster Types}
+
+Future versions of the application may introduce new monster types with distinct
+visual appearances, movement patterns, health values, and attack behaviors.
+
+Additional enemy variations could increase gameplay diversity and provide more
+complex interaction scenarios for the player.
+
+\subsection{Additional Weapons}
+
+The weapon system may be extended to support a larger variety of weapons, each
+with unique projectile properties, firing rates, damage values, and visual
+effects.
+
+Examples include explosive projectiles, rapid-fire weapons, area-of-effect
+attacks, and specialized defensive weapons.
+
+\end{document}

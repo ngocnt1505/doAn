@@ -31,13 +31,17 @@ import { WEAPON_ORIGIN, WAVE_TRANSITION_SECONDS } from "@/core/constants";
 
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case "START_GAME":
-      // Begin a brand-new session from the welcome screen (SRS FR-2).
-      return { ...initialState(), status: "countdown" };
-
-    case "BEGIN_PLAY":
-      if (state.status !== "countdown") return state;
-      return { ...state, status: "playing" };
+    case "START_GAME": {
+      // Begin a brand-new session from the welcome screen (SRS FR-2). Capture the
+      // leaderboard name from the start-screen prompt; a blank / missing name
+      // means "Pass" (anonymous — that run won't be submitted at game end).
+      const name = action.name?.trim();
+      return {
+        ...initialState(),
+        status: "countdown",
+        playerName: name ? name : null,
+      };
+    }
 
     case "PAUSE":
       if (state.status !== "playing") return state;
@@ -54,8 +58,9 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, status: "lose" };
 
     case "RESTART":
-      // Fresh state, straight back into the countdown (SRS FR-28).
-      return { ...initialState(), status: "countdown" };
+      // Fresh state, straight back into the countdown (SRS FR-28). Keep the same
+      // player name so a retry still counts on the leaderboard without retyping.
+      return { ...initialState(), status: "countdown", playerName: state.playerName };
 
     case "RETURN_TO_MENU":
       return initialState();
@@ -103,17 +108,9 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return changed ? { ...state, enemies } : state;
     }
 
-    case "SET_TARGET":
-      // Drop (or move) the single "X" target the player clicked (SRS FR-15).
-      return { ...state, marker: createTargetMarker(action.pos) };
-
     case "CLEAR_TARGET":
       // Hide the "X" — used the instant a bullet reaches it (M9).
       return state.marker ? { ...state, marker: null } : state;
-
-    case "FIRE_BULLET":
-      // Add a pre-built projectile to the world (legacy/debug path).
-      return { ...state, bullets: [...state.bullets, action.bullet] };
 
     case "FIRE_SHOT": {
       // Only fire while Playing (SRS FR-15 precondition) and when the weapon has

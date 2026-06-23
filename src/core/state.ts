@@ -39,4 +39,6 @@ export const initialState = (): GameState => ({
   bullets: [],
   // No target chosen until the player clicks the ground (SRS FR-15).
   marker: null,
+  // Set on START_GAME from the start-screen name prompt; null = anonymous.
+  playerName: null,
 });

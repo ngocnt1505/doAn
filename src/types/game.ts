@@ -70,4 +70,8 @@ export interface GameState {
   /** The current "X" target the player last clicked, or null if none yet
    *  (SRS FR-15). The renderer mirrors it to the scene. */
   marker: TargetMarker | null;
+
+  /** Name the player entered on the start screen, or null if they chose "Pass"
+   *  (anonymous). Only named runs are submitted to the leaderboard at game end. */
+  playerName: string | null;
 }

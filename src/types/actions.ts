@@ -18,11 +18,12 @@
  *   - Transient inter-system notifications → `src/core/eventBus.ts`
  * ============================================================================= */
 
-import type { Bullet, Enemy, GroundPos, WeaponLevel } from "./entity";
+import type { Enemy, GroundPos, WeaponLevel } from "./entity";
 
 /* ---------- Lifecycle actions (SRS State Diagram) ---------- */
-interface StartGameAction { type: "START_GAME"; } // idle → countdown
-interface BeginPlayAction { type: "BEGIN_PLAY"; } // countdown → playing
+/** idle → countdown. Optional `name` is the leaderboard name from the start
+ *  screen; omitted / undefined means the player chose "Pass" (anonymous). */
+interface StartGameAction { type: "START_GAME"; name?: string; } // idle → countdown
 interface PauseAction { type: "PAUSE"; } // playing → paused
 interface ResumeAction { type: "RESUME"; } // paused → playing
 interface WinAction { type: "WIN"; } // playing → win
@@ -49,12 +50,8 @@ interface MoveEnemiesAction { type: "MOVE_ENEMIES"; dt: number; }
 interface DamageEnemyAction { type: "DAMAGE_ENEMY"; id: string; amount: number; }
 
 /* ---------- Shooting actions (Phase 5) ---------- */
-/** Set/move the target marker to a clicked ground position (SRS FR-15). */
-interface SetTargetAction { type: "SET_TARGET"; pos: GroundPos; }
 /** Clear the target marker — e.g. the moment a bullet reaches it (M9). */
 interface ClearTargetAction { type: "CLEAR_TARGET"; }
-/** Spawn a projectile directly (legacy/debug path; M5). */
-interface FireBulletAction { type: "FIRE_BULLET"; bullet: Bullet; }
 /** Fire the current weapon at a target: builds the projectile(s) for the active
  *  weapon, advances the Big Shot counter, and drops the marker (Phase 7). */
 interface FireShotAction { type: "FIRE_SHOT"; target: GroundPos; }
@@ -76,7 +73,6 @@ interface SelectWeaponAction { type: "SELECT_WEAPON"; weapon: WeaponLevel; }
  *  forgets one. Gameplay actions (SPAWN, FIRE, APPLY_DAMAGE…) arrive later. */
 export type GameAction =
   | StartGameAction
-  | BeginPlayAction
   | PauseAction
   | ResumeAction
   | WinAction
@@ -88,9 +84,7 @@ export type GameAction =
   | RemoveEnemyAction
   | MoveEnemiesAction
   | DamageEnemyAction
-  | SetTargetAction
   | ClearTargetAction
-  | FireBulletAction
   | FireShotAction
   | MoveBulletsAction
   | WaveClearedAction

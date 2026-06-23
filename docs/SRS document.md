@@ -227,16 +227,19 @@ visual feedback generation.
 
 ## System Context
 
-The application operates entirely within a web browser and does not
-require external services for its core functionality.
+The application operates within a web browser for all gameplay and does
+not require external services to play.
 
 User interactions are processed locally and rendered in real time
 through WebGL using the Three.js framework. All game logic, rendering
 operations, animation updates, and interaction handling are executed on
 the client side.
 
-The system does not depend on external databases, authentication
-services, or multiplayer infrastructure in its initial version.
+Persistent player rankings are handled by a lightweight server-side
+leaderboard service built with Next.js Route Handlers and a local SQLite
+database. The client communicates with this service through a small HTTP
+API. Aside from this leaderboard service, the system does not depend on
+external authentication services or multiplayer infrastructure.
 
 ## Assumptions and Constraints
 
@@ -289,6 +292,8 @@ The system provides the following major functions:
 - Provide visual feedback through lighting, animation, and interactive
   effects.
 
+- Record completed runs and present a ranked player leaderboard.
+
 # System Architecture
 
 ## Technology Stack
@@ -306,6 +311,8 @@ maintainable software architecture.
   WebGL          Browser graphics rendering API
   Tailwind CSS   User interface styling
   GLTF / GLB     3D model format
+  Route Handlers Backend HTTP API for the leaderboard (Next.js)
+  SQLite         Server-side leaderboard storage
   Git            Version control system
 
 The selected technology stack enables the development of a browser-based
@@ -396,6 +403,8 @@ type GameState = {
   player: {
     hp: number
   }
+
+  playerName: string | null
 
   enemies: Enemy[]
   bullets: Bullet[]
@@ -566,13 +575,18 @@ the game before gameplay begins.
 3.  The system displays a short description explaining that the player
     must defend a house against incoming monsters.
 
-4.  The system displays a Start Game button.
+4.  The system displays a name input field for the leaderboard.
 
-5.  The system waits for user interaction.
+5.  The system displays a "Play with Name" button, a "Pass" button (play
+    anonymously), and a "View Leaderboard" option.
 
-6.  The user clicks Start Game.
+6.  The system waits for user interaction.
 
-7.  The system transitions to the Gameplay Scene.
+7.  The user enters a name and clicks "Play with Name", or clicks "Pass"
+    to play anonymously.
+
+8.  The system transitions to the Gameplay Scene, carrying the chosen
+    name (or none for an anonymous session).
 
 **Business Rules**
 
@@ -581,7 +595,13 @@ the game before gameplay begins.
 
 - BR-2: No enemies shall spawn while the Welcome Screen is active.
 
-- BR-3: The Start Game button shall always be visible.
+- BR-3: The Start Game controls shall always be visible.
+
+- BR-3a: "Play with Name" shall be enabled only when a non-empty name is
+  entered; "Pass" shall always be available.
+
+- BR-3b: The Welcome Screen shall allow the player to view the
+  leaderboard before starting a session.
 
 **Acceptance Criteria**
 
@@ -881,11 +901,11 @@ The Weapon System controls weapon progression and damage capabilities.
 
 - BR-34: The Basic weapon shall be the starting weapon.
 
-- BR-35: Normal attacks shall deal 30 damage.
+- BR-35: Normal attacks shall deal 80 damage.
 
 - BR-36: Every third normal attack shall generate one Big Shot.
 
-- BR-37: The Big Shot shall deal 50 damage.
+- BR-37: The Big Shot shall deal 100 damage.
 
 - BR-38: The Basic weapon shall have the slowest projectile travel time.
 
@@ -898,15 +918,15 @@ The Weapon System controls weapon progression and damage capabilities.
 
 - BR-39: The Medium weapon shall be unlocked after completing Wave 1.
 
-- BR-40: Normal attacks shall deal 50 damage.
+- BR-40: Normal attacks shall deal 100 damage.
 
 - BR-41: Every fourth normal attack shall generate one Big Shot.
 
-- BR-42: The Big Shot shall deal 70 damage.
+- BR-42: The Big Shot shall deal 120 damage.
 
 - BR-43: Projectile travel speed shall be faster than the Basic weapon.
 
-- BR-131: The Medium weapon shall require 3 seconds to reload before it
+- BR-131: The Medium weapon shall require 2 seconds to reload before it
   can fire again.
 
 ### FR-14 Advanced Weapon
@@ -917,15 +937,15 @@ The Weapon System controls weapon progression and damage capabilities.
 
 - BR-45: Each attack shall fire two projectiles.
 
-- BR-46: Each projectile shall deal 50 damage.
+- BR-46: Each projectile shall deal 150 damage.
 
 - BR-47: Every fifth normal attack shall generate one Big Shot.
 
-- BR-48: The Big Shot shall deal 100 damage.
+- BR-48: The Big Shot shall deal 170 damage.
 
 - BR-49: Projectile travel speed shall be the fastest among all weapons.
 
-- BR-132: The Advanced weapon shall require 4 seconds to reload before it
+- BR-132: The Advanced weapon shall require 3 seconds to reload before it
   can fire again.
 
 **Weapon Reload Times**
@@ -934,12 +954,12 @@ The Weapon System controls weapon progression and damage capabilities.
   Weapon      Reload Time
   ---------- -------------
   Basic         2 Seconds
-  Medium        3 Seconds
-  Advanced      4 Seconds
+  Medium        2 Seconds
+  Advanced      3 Seconds
 :::
 
-More powerful weapons reload more slowly, balancing their higher damage
-and additional projectiles.
+More powerful weapons generally reload more slowly, balancing their
+higher damage and additional projectiles.
 
 "'
 
@@ -1110,9 +1130,9 @@ Provide periodic high-damage attacks.
 ::: center
   Weapon      Trigger Count   Damage
   ---------- --------------- --------
-  Basic          3 Shots        50
-  Medium         4 Shots        70
-  Advanced       5 Shots       100
+  Basic          3 Shots       100
+  Medium         4 Shots       120
+  Advanced       5 Shots       170
 :::
 
 **Acceptance Criteria**
@@ -1889,6 +1909,182 @@ Remove inactive entities from the game world.
 - BR-129: Removed entities shall no longer participate in updates or
   rendering.
 
+## Leaderboard and Ranking System
+
+The Leaderboard and Ranking System records completed runs and ranks
+players against one another. It spans the client (name capture, result
+display) and a lightweight server-side service that persists scores and
+returns them in ranked order.
+
+A run is described by the player's name, the total time taken, the
+furthest wave reached, and whether all three waves were cleared. The
+ranking favours players who clear the game fastest, while still placing
+players who progressed further above those who did not.
+
+### FR-42 Player Name Entry
+
+**Purpose**
+
+Capture an optional display name so a run can be attributed to the player
+on the leaderboard.
+
+**Main Flow**
+
+1.  The Welcome Screen presents a name input and two ways to start:
+    "Play with Name" and "Pass".
+
+2.  The player either enters a name and starts a recorded session, or
+    chooses "Pass" to play anonymously.
+
+3.  The chosen name is retained for the session.
+
+**Business Rules**
+
+- BR-144: The Welcome Screen shall provide a field for entering a player
+  name.
+
+- BR-145: "Play with Name" shall start a session whose result is recorded
+  under the entered name.
+
+- BR-146: "Pass" shall start an anonymous session that is not recorded.
+
+- BR-147: The entered name shall be retained across Restart so a retry is
+  still recorded, and shall be cleared on return to the Welcome Screen.
+
+- BR-148: The name shall be trimmed and limited to a maximum of 20
+  characters.
+
+**Acceptance Criteria**
+
+- A named session starts only when a non-empty name is entered.
+
+- An anonymous session can always be started with "Pass".
+
+### FR-43 Run Recording
+
+**Purpose**
+
+Persist the outcome of a finished run so it can appear on the
+leaderboard.
+
+**Trigger**
+
+The game reaches the Win or Lose state during a named session.
+
+**Main Flow**
+
+1.  The system determines the total play time, the furthest wave reached,
+    and whether the game was won.
+
+2.  The system submits the run to the leaderboard service through the
+    HTTP API.
+
+3.  The service validates and stores the run.
+
+**Business Rules**
+
+- BR-149: A run shall be recorded exactly once, at game end (win or
+  lose).
+
+- BR-150: Anonymous (Pass) runs shall not be recorded.
+
+- BR-151: The recorded time shall be the total active play time of the
+  session.
+
+- BR-152: The recorded wave shall be the furthest wave reached, and the
+  win flag shall be true only when all three waves are cleared.
+
+**Acceptance Criteria**
+
+- Finishing a named game adds exactly one entry to the leaderboard.
+
+- Anonymous games add no entry.
+
+### FR-44 Ranking Rules
+
+**Purpose**
+
+Define a single, consistent order for all recorded runs.
+
+**Business Rules**
+
+- BR-153: Players who clear all three waves shall rank above players who
+  do not.
+
+- BR-154: Among players who cleared the game, a shorter completion time
+  shall rank higher.
+
+- BR-155: Among players who did not clear the game, runs shall be grouped
+  by furthest wave reached, with higher waves ranking above lower waves.
+
+- BR-156: Players who did not clear the game shall not be ranked by time;
+  within the same wave, more recent runs shall appear first.
+
+**Acceptance Criteria**
+
+- Winners appear first, ordered by fastest time.
+
+- Non-winners follow, grouped from the deepest wave to the shallowest.
+
+### FR-45 Leaderboard Display
+
+**Purpose**
+
+Show the ranked standings to the player.
+
+**Main Flow**
+
+1.  The system requests the ranked leaderboard from the service.
+
+2.  The system displays, for each entry, its rank, name, result (cleared
+    or wave reached), and time.
+
+**Business Rules**
+
+- BR-157: The leaderboard shall display rank, name, result, and time for
+  each entry.
+
+- BR-158: The leaderboard shall be viewable from the Welcome Screen and
+  shall be shown on the Win and Lose screens.
+
+- BR-159: When shown after a game, the player's most recent run shall be
+  highlighted.
+
+- BR-160: The leaderboard shall present clear loading, empty, and error
+  states.
+
+**Acceptance Criteria**
+
+- The board reflects the ranking rules (FR-44).
+
+- The player's newly recorded run is highlighted on the end screen.
+
+### FR-46 Leaderboard Service
+
+**Purpose**
+
+Provide persistent storage and a defined interface for leaderboard data.
+
+**Business Rules**
+
+- BR-161: Scores shall be stored in a persistent server-side data store.
+
+- BR-162: The client shall access the store only through the HTTP API:
+  one operation to record a run and one to retrieve the ranked list.
+
+- BR-163: The service shall validate submitted runs and reject malformed
+  data.
+
+- BR-164: Retrieval shall return entries already ordered by the ranking
+  rules (FR-44).
+
+**Acceptance Criteria**
+
+- Valid runs are stored and retrievable; malformed submissions are
+  rejected.
+
+- The retrieved list is already in ranked order.
+
 # Non-Functional Requirements
 
 ## Performance Requirements
@@ -1983,28 +2179,26 @@ frontend architecture defined in the project proposal, the system has
 been designed with extensibility in mind. Several enhancements may be
 considered in future development phases.
 
-## Player Ranking System
+## Ranking Enhancements
 
-A ranking system may be implemented to compare player performance across
-multiple gameplay sessions.
+The existing leaderboard (Leaderboard and Ranking System) may be extended
+to compare player performance in richer ways.
 
-Metrics such as completion time, accuracy, defeated enemies, and
-achieved scores could be recorded and displayed through leaderboards.
-
-The ranking system would require backend support for data storage and
-synchronization between users.
+Additional metrics such as accuracy, enemies defeated, and per-weapon
+statistics could be recorded alongside the existing time and wave data,
+and presented through expanded leaderboard views and filters.
 
 ## Backend Integration
 
-A backend service may be introduced to support persistent data storage
-and online functionality.
+The existing leaderboard service may be expanded into a fuller backend to
+support online functionality beyond a single device.
 
 Potential features include player accounts, game progress tracking,
 statistics collection, cloud-based configuration management, and
-persistent gameplay records.
+cross-device synchronization of leaderboard records.
 
-The integration could be implemented using a REST API or modern backend
-frameworks while preserving the existing frontend architecture.
+The expansion could migrate the current local store to a hosted database
+while preserving the existing HTTP API and frontend architecture.
 
 ## Additional Monster Types
 

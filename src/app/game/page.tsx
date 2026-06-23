@@ -23,26 +23,30 @@ import WaveTransition from "@/components/overlays/WaveTransition";
 import WinScreen from "@/components/overlays/WinScreen";
 import LoseScreen from "@/components/overlays/LoseScreen";
 import { GameStoreProvider } from "@/hooks/useGameStore";
+import { ScoreSubmissionProvider } from "@/hooks/useSubmitScore";
 
 export default function GamePage() {
   return (
     <GameStoreProvider>
-      <main className="relative h-screen w-screen overflow-hidden">
-        <GameCanvas />
+      {/* Watches for game end and records the run on the leaderboard (once). */}
+      <ScoreSubmissionProvider>
+        <main className="relative h-screen w-screen overflow-hidden">
+          <GameCanvas />
 
-        {/* HUD + runtime controls */}
-        <HUD />
-        <ControlPanel />
+          {/* HUD + runtime controls */}
+          <HUD />
+          <ControlPanel />
 
-        {/* State-driven overlays — each renders only for its status */}
-        <StartScreen />
-        <Countdown />
-        <PauseScreen />
-        <WaveRewardScreen />
-        <WaveTransition />
-        <WinScreen />
-        <LoseScreen />
-      </main>
+          {/* State-driven overlays — each renders only for its status */}
+          <StartScreen />
+          <Countdown />
+          <PauseScreen />
+          <WaveRewardScreen />
+          <WaveTransition />
+          <WinScreen />
+          <LoseScreen />
+        </main>
+      </ScoreSubmissionProvider>
     </GameStoreProvider>
   );
 }

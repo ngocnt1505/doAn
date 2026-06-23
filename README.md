@@ -35,6 +35,30 @@ Requirements: a modern desktop browser with WebGL, and Node.js 18+.
   reward screen, or switch anytime from the **Weapons** picker in the HUD.
 - You **lose** if any monster reaches the house, and **win** by clearing all three
   waves.
+- On the start screen, enter a **name** to have your run recorded on the
+  **leaderboard**, or **Pass** to play anonymously. After each game the board shows
+  where you placed.
+
+## Leaderboard & API
+
+Finished runs are stored in a small SQLite leaderboard, exposed through a Next.js
+Route Handler at [`/api/scores`](src/app/api/scores/route.ts) — the browser talks to
+it over `fetch` (see [`scoresApi.ts`](src/lib/scoresApi.ts)); only server code
+touches the database, behind [`db.ts`](src/lib/db.ts).
+
+| Method | Route | Purpose |
+| ------ | ----- | ------- |
+| `GET`  | `/api/scores?limit=N` | Ranked leaderboard (default 20 rows). |
+| `POST` | `/api/scores` | Record a run: `{ name, timeMs, waveReached, won }`. |
+
+**Ranking:** players who clear all three waves rank first, ordered by fastest time;
+everyone else is grouped by how far they reached (wave 3 → 2 → 1), newest first.
+
+**Storage:** a local SQLite file at `data/leaderboard.sqlite` (gitignored, created
+on first write) via `better-sqlite3`. The schema lives in `db.ts`. Because all DB
+access is isolated there, swapping to a hosted database (e.g. for a Vercel deploy,
+where the serverless filesystem is not persistent) is a single-file change — the
+API contract and UI are unaffected.
 
 ## Architecture
 

@@ -49,7 +49,7 @@ export interface WeaponSpec {
 export const WEAPONS: Record<WeaponLevel, WeaponSpec> = {
   basic: {
     label: "Basic",
-    damage: 70,
+    damage: 80,
     bigShotEvery: 3,
     bigShotDamage: 100,
     flightTime: 1.3, // slowest
@@ -65,19 +65,19 @@ export const WEAPONS: Record<WeaponLevel, WeaponSpec> = {
     bigShotDamage: 120,
     flightTime: 1.0,
     projectiles: 1,
-    reloadTime: 3,
+    reloadTime: 2,
     unlockAfterWave: 1, // after Wave 1 (SRS BR-92)
     // GLB faces +z (the player) at -π/2; +π/2 more turns the barrel to +x (yard).
     rotationY: 0,
   },
   advanced: {
     label: "Advanced",
-    damage: 120,
+    damage: 150,
     bigShotEvery: 5,
-    bigShotDamage: 150,
+    bigShotDamage: 170,
     flightTime: 0.7, // fastest
     projectiles: 2, // two projectiles per attack (SRS BR-45)
-    reloadTime: 4,
+    reloadTime: 3,
     unlockAfterWave: 2, // after Wave 2 (SRS BR-93)
     // GLB faces -x (the house) at -π/2; a half turn (π) brings the barrel to +x.
     rotationY: Math.PI / 2,

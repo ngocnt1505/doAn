@@ -34,9 +34,6 @@ export interface GameEvents {
     damage: number;
     big: boolean;
   };
-  "enemy:killed": { enemyId: string };
-  "bullet:hit": { bulletId: string; x: number; z: number };
-  "wave:complete": { wave: number };
 }
 
 type Handler<K extends keyof GameEvents> = (payload: GameEvents[K]) => void;

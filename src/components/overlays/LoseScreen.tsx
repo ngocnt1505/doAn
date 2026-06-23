@@ -11,6 +11,7 @@
 
 import Button from "@/components/ui/Button";
 import Panel from "@/components/ui/Panel";
+import ScoreResult from "@/components/ScoreResult";
 import { useGameStatus, useGameStore } from "@/hooks/useGameStore";
 
 export default function LoseScreen() {
@@ -21,14 +22,15 @@ export default function LoseScreen() {
 
   return (
     <div className="animate-overlay-in absolute inset-0 z-30 flex items-center justify-center bg-black/70">
-      <Panel className="mx-4 w-96 max-w-full p-10 text-center">
+      <Panel className="mx-4 w-[28rem] max-w-full p-8 text-center">
         <h2 className="mb-2 text-3xl font-semibold tracking-tight text-red-300">
           Defeat
         </h2>
-        <p className="mb-8 text-zinc-300">
+        <p className="mb-4 text-zinc-300">
           A monster broke through and reached the house. Try again?
         </p>
-        <div className="flex flex-col gap-3">
+        <ScoreResult />
+        <div className="mt-6 flex flex-col gap-3">
           <Button onClick={() => dispatch({ type: "RESTART" })}>Restart</Button>
           <Button
             variant="secondary"
