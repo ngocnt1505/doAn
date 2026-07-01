@@ -1,11 +1,4 @@
-/* =============================================================================
- * src/components/ui/Button.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Reusable styled button primitive shared by every overlay and the control
- *   panel, so action buttons (Start, Resume, Restart, …) look and behave
- *   consistently (SRS Maintainability: minimise UI duplication).
- * ============================================================================= */
+// Reusable styled button primitive shared by every overlay and the control panel.
 
 import type { ButtonHTMLAttributes } from "react";
 

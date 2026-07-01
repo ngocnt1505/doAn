@@ -1,11 +1,5 @@
-/* =============================================================================
- * src/components/ScoreResult.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   The end-screen leaderboard block shared by the Win and Lose overlays. It
- *   reflects the current run's submission state (saving / saved / error / skipped)
- *   and renders the ranked board with the player's new row highlighted.
- * ============================================================================= */
+// The end-screen leaderboard block shared by the Win and Lose overlays. Reflects
+// the current run's submission state and highlights the player's new row.
 
 "use client";
 
@@ -15,7 +9,6 @@ import { useScoreSubmission } from "@/hooks/useSubmitScore";
 export default function ScoreResult() {
   const submission = useScoreSubmission();
 
-  // The highlighted row + status message depend on where the submission is.
   const highlightId = submission.phase === "done" ? submission.score.id : null;
 
   return (
@@ -40,7 +33,6 @@ export default function ScoreResult() {
       <p className="mb-1 px-2 text-[10px] uppercase tracking-widest text-zinc-400">
         Leaderboard
       </p>
-      {/* `highlightId` doubles as a re-fetch trigger, so a just-saved run appears. */}
       <Leaderboard highlightId={highlightId} className="max-h-64 overflow-y-auto" />
     </div>
   );

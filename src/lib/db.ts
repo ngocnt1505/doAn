@@ -1,38 +1,17 @@
-/* =============================================================================
- * src/lib/db.ts
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   The ONLY module that touches the database. It owns the SQLite file, the
- *   `scores` table, and the prepared statements that read/write it. Everything
- *   else (the API route, the UI) goes through the small functions exported here,
- *   so the storage engine stays swappable behind this one file — e.g. switching
- *   to a hosted Postgres for a Vercel deploy would only change THIS file.
- *
- * WHY A SINGLETON
- *   Next.js dev mode hot-reloads modules on every edit. Re-opening the SQLite
- *   file each time would leak file handles, so we cache the connection on
- *   `globalThis` and reuse it across reloads.
- *
- * RANKING (the heart of the leaderboard)
- *   ORDER BY won DESC,                                -- winners first
- *            wave_reached DESC,                       -- then deepest progress
- *            CASE WHEN won = 1 THEN time_ms END ASC,  -- winners: fastest first
- *            created_at DESC                          -- losers: most recent first
- *   So: players who cleared all 3 waves rank on top by fastest time; everyone
- *   else is grouped by how far they got (wave 3 → 2 → 1), newest run first.
- * ============================================================================= */
+// The only module that touches the database. It owns the SQLite file, the
+// `scores` table, and the prepared statements, so the storage engine stays
+// swappable behind this one file.
 
 import path from "node:path";
 import fs from "node:fs";
 import Database from "better-sqlite3";
 import type { NewScore, Score } from "@/types/score";
 
-/** The DB lives in a local file under `data/` (gitignored). */
+// The DB lives in a local file under `data/`.
 const DB_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "leaderboard.sqlite");
 
-/** Shape of a row as stored (snake_case). Mapped to the camelCase `Score` before
- *  it leaves this module. `won` is stored as 0/1 (SQLite has no boolean). */
+// Shape of a row as stored (snake_case); `won` is 0/1.
 interface ScoreRow {
   id: number;
   name: string;
@@ -42,11 +21,11 @@ interface ScoreRow {
   created_at: number;
 }
 
-/** Open (or create) the database and ensure the schema exists. */
+// Open (or create) the database and ensure the schema exists.
 function openDatabase(): Database.Database {
   fs.mkdirSync(DB_DIR, { recursive: true });
   const db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL"); // better concurrent read/write behaviour
+  db.pragma("journal_mode = WAL");
   db.exec(`
     CREATE TABLE IF NOT EXISTS scores (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,12 +39,12 @@ function openDatabase(): Database.Database {
   return db;
 }
 
-/* Cache the connection across dev hot-reloads (see WHY A SINGLETON above). */
+// Cache the connection across dev hot-reloads to avoid leaking file handles.
 const globalForDb = globalThis as unknown as { __leaderboardDb?: Database.Database };
 const db = globalForDb.__leaderboardDb ?? openDatabase();
 if (process.env.NODE_ENV !== "production") globalForDb.__leaderboardDb = db;
 
-/* Prepared statements (compiled once, reused per call). */
+// Prepared statements (compiled once, reused per call).
 const insertStmt = db.prepare(
   `INSERT INTO scores (name, time_ms, wave_reached, won, created_at)
    VALUES (@name, @timeMs, @waveReached, @won, @createdAt)`,
@@ -81,6 +60,8 @@ const recentDuplicateStmt = db.prepare(
     ORDER BY created_at DESC
     LIMIT 1`,
 );
+// The ranking query: winners first, then deepest wave, then fastest time, then
+// most recent.
 const listStmt = db.prepare(
   `SELECT id, name, time_ms, wave_reached, won, created_at
      FROM scores
@@ -91,8 +72,7 @@ const listStmt = db.prepare(
     LIMIT @limit`,
 );
 
-/** Convert a stored row into the wire shape. `rank` is filled in by the caller
- *  (it depends on position within the returned, already-sorted list). */
+// Convert a stored row into the wire shape.
 function toScore(row: ScoreRow, rank: number): Score {
   return {
     id: row.id,
@@ -105,9 +85,10 @@ function toScore(row: ScoreRow, rank: number): Score {
   };
 }
 
-/** Record a finished run and return the stored row (with its rank in the board). */
+// Record a finished run and return the stored row (with its rank).
 export function insertScore(entry: NewScore): Score {
   const createdAt = Date.now();
+  // Guard against a duplicate submit within a short window.
   const duplicate = recentDuplicateStmt.get({
     name: entry.name,
     timeMs: entry.timeMs,
@@ -144,7 +125,7 @@ export function insertScore(entry: NewScore): Score {
   );
 }
 
-/** Read the leaderboard, already ranked, capped at `limit` rows. */
+// Read the leaderboard, already ranked, capped at `limit` rows.
 export function listScores(limit = 20): Score[] {
   const rows = listStmt.all({ limit }) as ScoreRow[];
   return rows.map((row, i) => toScore(row, i + 1));

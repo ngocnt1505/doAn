@@ -1,19 +1,6 @@
-/* =============================================================================
- * src/components/HUD.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Heads-up display (SRS FR-30 Wave Information, FR-31 Gameplay Timer). A thin
- *   top bar that reflects the current wave, elapsed play time and active weapon.
- *   It reads live state from the store, so it updates immediately on any change
- *   (wave transition, tick) and freezes when the game is paused — because the
- *   reducer stops advancing `elapsed` outside the Playing state.
- *
- *   It also hosts the Weapons button: a popup that lets the player switch between
- *   UNLOCKED weapons (SRS FR-25); locked weapons are shown disabled.
- *
- *   Visible during the active session (countdown / playing / paused / reward /
- *   transition); hidden on the welcome and end screens, which present their own UI.
- * ============================================================================= */
+// Heads-up display: a thin top bar showing the current wave, elapsed time and
+// active weapon, plus a picker to switch between unlocked weapons. Reads live
+// state, so it freezes with the simulation. Hidden on the welcome/end screens.
 
 "use client";
 
@@ -23,7 +10,7 @@ import { TOTAL_WAVES } from "@/core/constants";
 import { WEAPONS, WEAPON_ORDER } from "@/core/weapons";
 import { useGameState, useGameStore } from "@/hooks/useGameStore";
 
-/** Whole seconds → "m:ss" (FR-31: timer updates every second). */
+// Whole seconds → "m:ss".
 function formatTime(seconds: number): string {
   const total = Math.floor(seconds);
   const minutes = Math.floor(total / 60);
@@ -48,12 +35,13 @@ export default function HUD() {
   const { dispatch } = useGameStore();
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Reload progress: 100% = ready to fire, lower while the weapon reloads.
+  // Reload progress: 100% = ready to fire, lower while reloading.
   const reloadPct =
     weaponCooldown <= 0
       ? 100
       : (1 - weaponCooldown / WEAPONS[weapon].reloadTime) * 100;
 
+  // Only visible during an active session.
   const active =
     status === "countdown" ||
     status === "playing" ||
@@ -64,9 +52,7 @@ export default function HUD() {
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center p-4">
-      {/* While the picker is open, a transparent full-screen backdrop catches the
-          next click: it closes the popup AND swallows the click so it can't reach
-          the canvas underneath (no stray marker / shot when clicking outside). */}
+      {/* Backdrop that closes the picker and swallows the click. */}
       {pickerOpen && (
         <div
           className="pointer-events-auto fixed inset-0 z-10"
@@ -84,7 +70,7 @@ export default function HUD() {
             <span className="text-lg font-semibold tabular-nums">
               {WEAPONS[weapon].label}
             </span>
-            {/* Reload bar: fills green as the weapon reloads, full = ready. */}
+            {/* Reload bar: fills as the weapon reloads, full = ready. */}
             <div className="mt-1 h-1 w-16 overflow-hidden rounded bg-white/15">
               <div
                 className={`h-full ${reloadPct >= 100 ? "bg-emerald-400" : "bg-amber-400"}`}

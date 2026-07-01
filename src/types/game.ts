@@ -1,77 +1,58 @@
-/* =============================================================================
- * src/types/game.ts
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   The shape of the whole game world: every piece of information the systems
- *   need to compute the next frame. This is the single source of truth that the
- *   store holds.
- *
- * WHY IT EXISTS
- *   In a state-driven architecture, "the game" IS this object. Defining it as a
- *   TypeScript interface makes the contract explicit: reducers must produce a
- *   valid GameState, systems receive and return a GameState, the HUD reads one.
- *
- * WHAT BELONGS HERE
- *   - Top-level state interface
- *   - Lifecycle/status enum
- *
- * WHAT DOES NOT BELONG HERE
- *   - Action types → `actions.ts`
- *   - Entity shapes → `entity.ts`
- *   - The initial-state factory → `src/core/state.ts`
- * ============================================================================= */
+// The shape of the whole game world: every piece of information the systems need
+// to compute the next frame. The single source of truth the store holds.
 
 import type { Bullet, Enemy, TargetMarker, WeaponLevel } from "./entity";
 
-/** Lifecycle of the game (SRS State Diagram). Overlays render from this value. */
+// Lifecycle of the game. Overlays render from this value.
 export type GameStatus =
-  | "idle" // Welcome screen. Nothing is simulated (SRS BR-1/BR-2).
-  | "countdown" // 3 → 2 → 1 → Ready before the first spawn (SRS FR-3).
-  | "playing" // Active simulation. Systems run every frame.
-  | "paused" // Frozen. Systems skip update; render keeps drawing (SRS FR-26).
-  | "reward" // Wave cleared: weapon-unlock overlay, awaiting Use now / Continue.
-  | "transition" // 3s "Wave N" message before the next wave spawns (SRS FR-24).
-  | "win" // Wave 3 cleared (SRS FR-31).
-  | "lose"; // An enemy reached the house (SRS FR-29).
+  | "idle"
+  | "countdown"
+  | "playing"
+  | "paused"
+  | "reward"
+  | "transition"
+  | "win"
+  | "lose";
 
-/** The whole world, in one object. The reducer returns a new copy of this. */
+// The whole world, in one object. The reducer returns a new copy of this.
 export interface GameState {
   status: GameStatus;
 
-  /** Current wave, 1..3 (SRS FR-21). */
+  // Current wave, 1..3.
   wave: number;
-  /** Active weapon; starts "basic" (SRS BR-6/BR-91). */
+  // Active weapon; starts "basic".
   weapon: WeaponLevel;
-  /** Weapons the player has unlocked so far; starts just ["basic"]. The HUD
-   *  picker only lets the player switch to weapons in this list (SRS FR-25). */
+  // Weapons unlocked so far; the HUD picker only offers these.
   weaponsUnlocked: WeaponLevel[];
-  /** Normal attacks fired since the last Big Shot, for the CURRENT weapon. Resets
-   *  to 0 when the weapon changes or a Big Shot fires (SRS FR-18 / BR-62/63). */
+  // Normal attacks fired since the last Big Shot, for the current weapon.
   attackCount: number;
-  /** Seconds left until the weapon can fire again — the reload timer (SRS FR-16 /
-   *  BR-130..132). 0 means ready; firing sets it to the weapon's reload time. */
+  // Seconds left until the weapon can fire again (0 = ready).
   weaponCooldown: number;
 
-  /** Seconds elapsed in the Playing state (SRS FR-31). */
+  // Seconds elapsed in the Playing state.
   elapsed: number;
-  /** Countdown value shown before the first spawn (SRS FR-3). */
+  // Countdown value shown before the first spawn.
   countdown: number;
-  /** Seconds left in the between-wave transition message (SRS FR-24 / BR-89). */
+  // Seconds left in the between-wave transition message.
   waveTransition: number;
 
-  /** The protected house; defeat occurs when an enemy reaches it. */
+  // Grace countdown once a wave's field is clear, before advancing; null when no
+  // clear is pending. Kept in state so the reducer owns the wave-completion
+  // and victory decision.
+  waveClearTimer: number | null;
+  // Enemies of the current wave created so far (resets each wave).
+  spawnedThisWave: number;
+
+  // The protected house; defeat occurs when an enemy reaches it.
   player: { hp: number };
 
-  /** All living monsters. Order is not meaningful. */
+  // All living monsters and in-flight projectiles.
   enemies: Enemy[];
-  /** All in-flight projectiles. */
   bullets: Bullet[];
 
-  /** The current "X" target the player last clicked, or null if none yet
-   *  (SRS FR-15). The renderer mirrors it to the scene. */
+  // The current "X" target the player last clicked, or null if none yet.
   marker: TargetMarker | null;
 
-  /** Name the player entered on the start screen, or null if they chose "Pass"
-   *  (anonymous). Only named runs are submitted to the leaderboard at game end. */
+  // Name entered on the start screen, or null if anonymous ("Pass").
   playerName: string | null;
 }

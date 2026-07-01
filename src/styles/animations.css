@@ -1,12 +1,6 @@
-/* =============================================================================
- * src/styles/animations.css
- * -----------------------------------------------------------------------------
- * Shared keyframe animations for the UI layer: overlay fade-ins and the
- * countdown "pop". Kept here (not inline) because keyframes can't be expressed
- * as Tailwind utilities; layout/colour stay as utility classes in components.
- * ============================================================================= */
+/* Shared keyframe animations for the UI layer: overlay fade-ins and the countdown "pop". */
 
-/* Overlays (Start / Pause / Win / Lose) ease in instead of snapping. */
+/* Overlays ease in instead of snapping. */
 @keyframes overlay-in {
   from {
     opacity: 0;
@@ -20,9 +14,7 @@
   animation: overlay-in 180ms ease-out;
 }
 
-/* Countdown number grows and fades over its one visible second (SRS FR-3).
- * The element is re-keyed per value so this replays for each of 3 / 2 / 1 /
- * Ready. */
+/* Countdown number grows and fades over its one visible second (re-keyed per value). */
 @keyframes countdown-pop {
   0% {
     transform: scale(0.4);

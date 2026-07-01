@@ -23,6 +23,7 @@
 \usepackage{graphicx}   % for \resizebox and the cover logo
 \usepackage{xcolor}
 \usepackage{float}      % for the [H] figure placement
+\usepackage{longtable}  % for the multi-page requirements/traceability appendix
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, shapes.geometric, positioning, calc}
 \usepackage{hyperref}
@@ -40,12 +41,11 @@
 \newcommand{\guide}[1]{\par\noindent\textit{#1}\par}
 
 % --- cover-page fields (edit these) -----------------------------------------
-\newcommand{\thesistitle}{3D House Defense Game: A Browser-Based Interactive
-  Application Demonstrating Business Analysis and Frontend Engineering}
+\newcommand{\thesistitle}{3D House Defense Game Implemented with WebGL and Three.js}
 \newcommand{\studentname}{Nguyen Thuy Ngoc}
 \newcommand{\studentid}{23BI14344}
-\newcommand{\extsupervisor}{Prof. Dr. NGUYEN VAN A}   % <- replace with real name
-\newcommand{\intsupervisor}{Prof. Dr. NGUYEN VAN B}   % <- replace with real name
+\newcommand{\extsupervisor}{MSc. NGUYEN DANG BAO LONG}
+\newcommand{\intsupervisor}{MSc. HUYNH VINH NAM}
 \newcommand{\coverdate}{Hanoi, June -- 2026}
 
 \begin{document}
@@ -129,8 +129,8 @@ Internal Supervisor: & \intsupervisor \\
 
 \vspace{0.9cm}
 
-\noindent I, \makebox[6cm]{\dotfill}\ (supervisor's name), certify that the
-thesis / internship report of Mr/Ms.\ \makebox[5cm]{\dotfill}\ (student's name)
+\noindent I, \makebox[6cm]{\dotfill}\ , certify that the
+thesis / internship report of Ms. Nguyen Thuy Ngoc
 is qualified to be presented in the Internship Jury 2025--2026.
 
 \vspace{2.6cm}
@@ -183,30 +183,19 @@ once here so that the body text may use the short form freely.
 
 \begin{center}
 \begin{tabular}{p{2.8cm}p{10.5cm}}
-AoE        & Area of Effect \\
+3D         & Three-Dimensional \\
 API        & Application Programming Interface \\
-BA         & Business Analyst / Business Analysis \\
-BR         & Business Rule \\
-CRUD       & Create, Read, Update, Delete \\
 CSS        & Cascading Style Sheets \\
 DOM        & Document Object Model \\
 FPS        & Frames Per Second \\
-FR         & Functional Requirement \\
 GLB / GLTF & Graphics Library Transmission Format (binary / text 3D model format) \\
-HP         & Health Points \\
 HTTP       & Hypertext Transfer Protocol \\
 HUD        & Heads-Up Display \\
 ICT        & Information and Communication Technology \\
 JSON       & JavaScript Object Notation \\
-NFR        & Non-Functional Requirement \\
-rAF        & requestAnimationFrame \\
-SPA        & Single-Page Application \\
 SQL        & Structured Query Language \\
-SRS        & Software Requirements Specification \\
-TR         & Timing Rule \\
 UI         & User Interface \\
 USTH       & University of Science and Technology of Hanoi \\
-UX         & User Experience \\
 WebGL      & Web Graphics Library \\
 \end{tabular}
 \end{center}
@@ -221,25 +210,32 @@ WebGL      & Web Graphics Library \\
 \addcontentsline{toc}{chapter}{Abstract}
 
 This thesis presents the analysis, design and implementation of a browser-based
-three-dimensional defence game, built as a single end-to-end project that
-combines analysis and technical skill. In the game, the player
-defends a house against three escalating waves of monsters by clicking the
+three-dimensional defence game, developed end to end as a single project that
+brings together system analysis and technical engineering. In the game, the
+player defends a house against three escalating waves of monsters by clicking the
 ground to fire a cannon whose projectiles arc to the chosen point and deal
-area-of-effect damage that falls off linearly with distance. The work was
-approached in two roles. As a analyst, we elicited the requirements,
-decomposed the game into twelve subsystems, and captured the gameplay rules, the
-enemy, weapon and wave balance, and the leaderboard ranking policy. As
-a frontend engineer, we realised that specification as a real-time application
-using Next.js, React, TypeScript and Three.js, organised into a strictly layered
-architecture --- user interface, state management, gameplay systems and Three.js
-rendering --- with a single state object updated through one pure reducer. A
-small full-stack slice, an HTTP API over an SQLite database, records finished
-runs and returns them in ranked order. The finished system was evaluated against
+area-of-effect damage that falls off linearly with distance. The work draws on
+the two skill sets we developed during our internship: system analysis and
+frontend engineering. As analysts, we elicited the requirements, decomposed the
+game into twelve subsystems, and specified the gameplay rules, the enemy, weapon
+and wave balance, and the leaderboard ranking policy. As frontend engineers, we
+realised that specification as a real-time application in Next.js, React,
+TypeScript and Three.js, organised into a strictly layered architecture --- user
+interface, state management, gameplay systems and Three.js rendering --- in which
+a single state object is updated through one pure reducer. Building the 3D scene
+exercised the core techniques of computer graphics: a perspective camera, ambient
+and directional lighting with shadow mapping, polygon meshes that combine Three.js
+primitives with imported textured GLTF models, skeletal animation for the
+monsters, mouse raycasting for aiming, and projectile motion for the shots. A
+small full-stack slice --- an HTTP API over an SQLite database --- records finished
+runs and returns them in ranked order. The completed system was evaluated against
 the specification through a requirements-traceability matrix and a performance
-assessment: every subsystem is implemented, the scene loads in about two
-seconds, and the frame rate stays at or above the thirty-frames-per-second
-target throughout play. The project shows that specifying an interactive system
-before building it yields a disciplined, traceable and verifiable result.
+assessment: every subsystem is implemented, the scene loads in about two seconds,
+and the frame rate stays at or above the thirty-frames-per-second target
+throughout play. The project shows that specifying an interactive system through
+analysis before building it yields a disciplined, traceable and verifiable
+result.
+
 
 
 % ===========================================================================
@@ -265,7 +261,14 @@ demand.
 game --- because it forces these problems into the open and, just as importantly,
 because it cannot be built well without first deciding how it should behave. A
 game therefore exercises both sides of software work at once: the up-front
-analysis that fixes the rules, and the engineering that brings them to life.
+analysis that fixes the rules, and the engineering that brings them to life. It
+also brings together the core techniques of \emph{computer graphics} --- 3D scene
+construction, a perspective camera, lighting and shadow mapping, polygon meshes
+and imported textured GLTF models, skeletal animation, raycasting and projectile
+motion --- which WebGL and Three.js make accessible in the browser. We set out to
+solve this with the very skills we built during our internship: the analysis used
+to specify a system before building it, and the frontend engineering used to
+implement it.
 
 \section{Problem Statement}
 
@@ -284,10 +287,13 @@ keeping them traceable to each other, is the core task of this thesis.
 \section{Internship Context and Role}
 
 This project grew out of an internship in which we learned a great deal. There
-we gained hands-on engineering experience and our first real exposure to how a
-software system is analysed and specified before it is built. The internship is
-where the knowledge and working habits behind this report were formed; the work
-done at the company is separate from this thesis.
+we gained hands-on frontend engineering experience and our first real exposure to
+how a software system is analysed and specified before it is built. These are
+precisely the two skills we set out to apply here: the analysis used to turn an
+idea into a specification, and the frontend engineering used to build it into a
+running 3D application. The internship is where the knowledge and working habits
+behind this report were formed; the work done at the company is separate from
+this thesis.
 
 The 3D House Defense Game presented here is a self-initiated, independent
 project --- not company work --- through which we apply what we learned. Building
@@ -476,32 +482,7 @@ Leaderboard and Ranking & Name, recording, ranking, display \\
 \end{tabular}
 \end{table}
 
-\subsection{Requirement Notation and Traceability}
 
-We use a small, consistent notation for the requirements, shown in
-Table~\ref{tab:notation}, and reuse the same identifiers in the source code.
-Each identifier appears in the code comments at the point it is implemented, so a
-reader can move from a requirement named in this chapter to the exact line that
-enforces it, and back.
-
-\begin{table}[h]
-\centering
-\caption{Requirement notation}
-\label{tab:notation}
-\begin{tabular}{|p{2.6cm}|p{9.0cm}|}
-\hline
-Prefix & Meaning \\
-\hline
-FR & A functional requirement (a behaviour) \\
-\hline
-BR & A business rule constraining a behaviour \\
-\hline
-TR & A timing rule (a deadline or interval) \\
-\hline
-NFR & A non-functional, quality requirement \\
-\hline
-\end{tabular}
-\end{table}
 
 \section{Core Gameplay Design}
 
@@ -799,6 +780,12 @@ player cannot tell whether a shot connected.
 
 \section{Leaderboard and Ranking Design}
 
+The leaderboard is a deliberate extension beyond the original proposal: the
+initial specification ended at the win or lose outcome, and we added a
+persistent, ranked record of finished runs so that a single-player game still
+offers a sense of comparison and a reason to replay. It is also what turns the
+project into a small full-stack slice rather than a purely client-side one.
+
 The leaderboard turns a finished game into a comparable record. A run is
 described by the player's name, the total time taken, the furthest wave reached,
 and whether all three waves were cleared. The ranking has to be fair to two
@@ -828,14 +815,7 @@ Order & Sort key & Direction \\
 \end{tabular}
 \end{table}
 
-\section{From Design to Specification}
 
-The decisions above are recorded formally and in full in the Software
-Requirements Specification, where each requirement
-carries an acceptance criterion. The next chapter turns this design into a
-working application and refers back to these identifiers as it goes, so that the
-finished system can be checked against the specification in
-Chapter~\ref{ch:results}.
 
 % ===========================================================================
 \chapter{Materials and Methods}\label{ch:methods}
@@ -889,9 +869,14 @@ A zero-configuration embedded database with a synchronous API \\
 \section{System Architecture}
 
 The application obeys one organising idea: a single object holds the whole game
-world, and everything else either reads it or produces a new version of it. This
-gives a four-layer architecture with a strictly one-directional data flow, which
-we describe here before the details.
+world, and everything else either reads it or produces a new version of it.
+Concretely, every piece of simulation state --- the wave number, the enemies and
+bullets, the reload and countdown timers, and even the between-wave grace and the
+count of enemies spawned so far --- lives in that one object, and every change to
+it passes through the reducer. The render loop and the input listeners never hold
+game state of their own; they only turn inputs into actions and draw the result.
+This gives a four-layer architecture with a strictly one-directional data flow,
+which we describe here before the details.
 
 \subsection{Layered Architecture Overview}
 
@@ -996,6 +981,7 @@ interface GameState {
   wave: number;  weapon: WeaponLevel;  weaponsUnlocked: WeaponLevel[];
   attackCount: number;  weaponCooldown: number;   // Big Shot + reload
   elapsed: number;  countdown: number;  waveTransition: number;
+  waveClearTimer: number | null;  spawnedThisWave: number; // wave completion
   player: { hp: number };
   enemies: Enemy[];  bullets: Bullet[];
   marker: TargetMarker | null;  playerName: string | null;
@@ -1012,7 +998,13 @@ behaviour can be read in one place, and any change can be logged and replayed.
 Table~\ref{tab:actions} lists the main actions and what each does. The reducer
 also enforces rules through guards: a shot is ignored while the weapon is still
 reloading, and the game flips to the lost state the moment a moving enemy reaches
-the house line.
+the house line. Crucially, both end conditions are decided here, in the reducer,
+not in the render loop. Defeat is applied when the movement action detects a
+breach; victory and the between-wave progression are applied inside the per-frame
+\texttt{TICK}: once the count of enemies spawned this wave reaches the wave's
+roster size and the field is empty, a short grace elapses and the reducer moves to
+the reward overlay for an earlier wave, or to the win state after the third. The
+render loop only feeds the reducer time and inputs; it never decides who has won.
 
 \begin{table}[htbp]
 \centering
@@ -1024,9 +1016,9 @@ Action & Effect on the game state \\
 \hline
 START\_GAME & Resets to a fresh world in the countdown state; keeps the entered name \\
 \hline
-TICK & Advances the countdown, elapsed time and reload timer by the frame's $dt$ \\
+TICK & Advances the countdown, elapsed time and reload timer by the frame's $dt$; also detects a cleared wave and applies victory or the reward transition \\
 \hline
-SPAWN\_ENEMY / MOVE\_ENEMIES & Adds a new enemy; advances all enemies and checks for a breach \\
+SPAWN\_ENEMY / MOVE\_ENEMIES & Adds a new enemy (counting it toward the wave roster); advances all enemies and checks for a breach \\
 \hline
 FIRE\_SHOT & Builds the active weapon's projectile(s), advances the Big Shot counter, starts the reload \\
 \hline
@@ -1066,8 +1058,10 @@ The callback is where one frame's work is sequenced, and it follows the data
 flow of Figure~\ref{fig:dataflow}. In order, it dispatches \texttt{TICK} to
 advance the timers; updates the spawn scheduler so the wave's enemies appear on
 time; advances the enemies and the bullets; detects any bullet that has just
-reached its target and broadcasts its impact once; checks whether the wave is
-complete; and finally renders the scene. Crucially, the gameplay steps run only
+reached its target and broadcasts its impact once; and finally renders the scene.
+Wave completion and victory are not tested here: the \texttt{TICK} it dispatches
+lets the reducer decide them from state, so the loop only supplies time and inputs
+and draws the outcome. Crucially, the gameplay steps run only
 while the game is in the playing state, and the renderer is fed a delta-time of
 zero when the game is not playing, so that on pause, win or lose the scene is
 still drawn but nothing moves.
@@ -1436,19 +1430,23 @@ Leaderboard and ranking & database, API route, client and submit hook & Implemen
 \subsection{Gameplay Walkthrough}
 
 A complete session runs from the welcome screen, through the countdown and three
-waves of combat, to a win or lose screen. We successfully navigate the welcome screen with the name entry, the countdown,
-mid-wave combat with several monsters advancing and health bars above them, a Big
-Shot landing with its larger burst, the between-wave reward where a new weapon is
-offered, and the final victory screen.
-
-
+waves of combat, to a win or lose screen. Rather than reproduce the running game
+as static screenshots, we present it as a live demonstration following the
+presentation, where the whole path can be shown in motion: the welcome screen
+with the name entry, the countdown, mid-wave combat with several monsters
+advancing and health bars above them, a Big Shot landing with its larger burst,
+the between-wave reward where a new weapon is offered, and the final victory
+screen. Showing the game live is more faithful than a screenshot, because the
+qualities that matter here --- the real-time movement, the aiming and the visual
+feedback --- are motion, not still images.
 
 \subsection{The Leaderboard in Action}
 
-The leaderboard after several runs. Players who
-cleared all three waves appear first, ordered by their completion time; players
-who did not finish follow, grouped by the furthest wave they reached. When the
-board is shown on an end screen, the player's own most recent run is highlighted.
+The leaderboard is likewise shown live in the same demonstration, populated by
+the runs played during the session. Players who cleared all three waves appear
+first, ordered by their completion time; players who did not finish follow,
+grouped by the furthest wave they reached. When the board is shown on an end
+screen, the player's own most recent run is highlighted.
 
 
 
@@ -1571,6 +1569,112 @@ without changing the client. And the content could grow with new enemy and weapo
 types, each of which slots into the existing tables and systems. None of these
 require rethinking the design; each is a natural next step on the foundation the
 project already lays down.
+
+% ===========================================================================
+% APPENDIX
+% ===========================================================================
+\appendix
+
+\chapter{Requirements Catalogue and Traceability (Condensed)}
+\label{app:trace}
+
+This appendix backs the traceability claim made in Chapters~\ref{ch:design}
+and~\ref{ch:results}. Section~3.2 presented the requirements as design decisions
+rather than as a formal list; here we give a condensed catalogue of representative
+requirements --- at least two per subsystem --- each with a one-line acceptance
+criterion (how a reviewer checks it by playing) and the exact code that implements
+it. Requirement identifiers reuse the SRS numbering cited throughout the code
+comments (FR = functional requirement, BR = business rule, TR = timing rule). Code
+locations are given as \texttt{file:line} using the file's base name; every source
+file has a unique name, so the base name locates it unambiguously under
+\texttt{src/}.
+
+\renewcommand{\arraystretch}{1.2}
+\small
+\begin{longtable}{|p{1.5cm}|p{7.9cm}|p{4.2cm}|}
+\hline
+\textbf{ID} & \textbf{Requirement and acceptance criterion} & \textbf{Code (file:line)} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Requirement and acceptance criterion} & \textbf{Code (file:line)} \\
+\hline
+\endhead
+\hline
+\endfoot
+\hline
+\endlastfoot
+
+\multicolumn{3}{|l|}{\textbf{Game Session Management}} \\ \hline
+FR-2 & Start resets to a fresh world in the countdown and keeps the entered name (blank = anonymous). \emph{Check:} Start clears the previous run. & \texttt{reducer.ts:35}, \texttt{state.ts:8} \\ \hline
+FR-3 & Countdown shows 3--2--1--Ready, one per second, then play begins on its own. \emph{Check:} play starts with no extra input after ``Ready''. & \texttt{reducer.ts:190}, \texttt{constants.ts:12} \\ \hline
+FR-28 & Restart returns straight to a fresh countdown, keeping the name. \emph{Check:} ``Restart'' begins a new run. & \texttt{reducer.ts:61} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Gameplay Environment}} \\ \hline
+BR-12/28 & Fixed zones along $x$ (house / strip / yard); the house front spans the depth $z$. \emph{Check:} monsters cross the green yard toward the house. & \texttt{constants.ts:29} \\ \hline
+FR-7 & Only clicks inside the yard are valid targets. \emph{Check:} clicking the house or strip fires nothing. & \texttt{shootingSystem.ts:10}, \texttt{GameCanvas.tsx:123} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Enemy System}} \\ \hline
+FR-8 / BR-17--21 & Three classes with fixed HP (easy 100, medium 200, hard 400). \emph{Check:} a hard enemy survives more hits than an easy one. & \texttt{Enemy.ts:7} \\ \hline
+FR-8 & Speed derived from a per-class field-crossing time (easy fastest). \emph{Check:} easy reaches the house before hard. & \texttt{movementSystem.ts:15} \\ \hline
+BR-25 & A spawned enemy immediately enters the moving state. \emph{Check:} no enemy stands still after spawning. & \texttt{enemyState.ts:8} \\ \hline
+BR-27--30 & Enemies weave on a smooth sine path, spread across depth. \emph{Check:} enemies do not funnel into one line. & \texttt{movementSystem.ts:33} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Weapon System}} \\ \hline
+FR-12--14 & Three tiers with rising damage and reload. \emph{Check:} Advanced hits harder but reloads slower. & \texttt{weapons.ts:20} \\ \hline
+BR-91--93 & Clearing wave 1/2 unlocks the next tier. \emph{Check:} Medium is selectable after wave 1. & \texttt{weapons.ts:57}, \texttt{reducer.ts:24} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Shooting and Damage}} \\ \hline
+FR-15 & A left-click on the yard drops the marker and fires. \emph{Check:} an ``X'' marks the click and a shot launches. & \texttt{GameCanvas.tsx:111} \\ \hline
+FR-16 / BR-130--132 & A shot is ignored while the weapon reloads. \emph{Check:} rapid clicks cannot beat the reload. & \texttt{reducer.ts:114} \\ \hline
+FR-19 / BR-67--69 & Impact damage falls off linearly to zero at the blast radius. \emph{Check:} centre = full damage, edge $\approx$ none. & \texttt{collisionSystem.ts:29} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Wave Progression}} \\ \hline
+BR-74 & Exactly three waves; victory follows wave 3. \emph{Check:} the game ends after the third wave. & \texttt{constants.ts:16} \\ \hline
+BR-75--77 & Fixed escalating rosters (3 / 5 / 7). \emph{Check:} wave 3 contains three hard enemies. & \texttt{waves.ts:7} \\ \hline
+BR-23 / TR-4 & The first enemy of a wave arrives 3\,s after ``Ready''. \emph{Check:} a short pause precedes the first spawn. & \texttt{spawnSystem.ts:19} \\ \hline
+BR-79--81 & Spawn gap = the class interval (easy 3 / medium 4 / hard 5\,s). \emph{Check:} tougher classes appear less often. & \texttt{spawnSystem.ts:12} \\ \hline
+FR-23 & A wave clears once its whole roster has spawned and no enemy remains --- decided in the reducer. \emph{Check:} reward/victory appears only after the last monster is gone. & \texttt{reducer.ts:190}, \texttt{waves.ts:14} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Runtime Control}} \\ \hline
+FR-26 / BR-96 & Pause freezes all gameplay updates. \emph{Check:} enemies and bullets stop while paused. & \texttt{reducer.ts:45}, \texttt{reducer.ts:83} \\ \hline
+BR-98 & The scene keeps being drawn while paused (fed $dt=0$). \emph{Check:} the field is still visible, just frozen. & \texttt{GameCanvas.tsx:168} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Victory and Defeat}} \\ \hline
+FR-29 / BR-104--105 & Defeat the instant a moving enemy reaches the house line (positional, not HP). \emph{Check:} one breach ends the game. & \texttt{reducer.ts:88} \\ \hline
+FR-31 & Victory once the third wave is fully cleared. \emph{Check:} clearing wave 3 shows the win screen. & \texttt{reducer.ts:190} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Heads-Up Display}} \\ \hline
+HUD & The HUD shows wave, elapsed time and active weapon, and freezes with the simulation. \emph{Check:} the timer stops while paused. & \texttt{HUD.tsx} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Rendering}} \\ \hline
+FR-33 & A perspective camera frames the field from high and behind. \emph{Check:} the whole yard is visible from above. & \texttt{camera.ts:8}, \texttt{constants.ts:73} \\ \hline
+Lighting & Ambient light plus one directional ``sun'' with soft shadow maps. \emph{Check:} enemies cast shadows on the yard. & \texttt{lighting.ts:7}, \texttt{threeSetup.ts:23} \\ \hline
+Picking & A camera ray is intersected with the mathematical ground plane $y=0$. \emph{Check:} the marker lands exactly under the cursor. & \texttt{raycasting.ts:36} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Physics and Collision}} \\ \hline
+FR-17 / FR-36 & Projectiles follow a ballistic arc solved to land on target at the flight time. \emph{Check:} a shot arcs and lands on the clicked point. & \texttt{bulletSystem.ts:14} \\ \hline
+FR-38 & Area damage resolved once per impact over enemies in radius. \emph{Check:} one shot can hit several close enemies. & \texttt{collisionSystem.ts:16} \\ \hline
+FR-39 & Bullets are removed after flight plus a short linger. \emph{Check:} projectiles vanish soon after landing. & \texttt{bulletSystem.ts:28} \\ \hline
+
+\multicolumn{3}{|l|}{\textbf{Leaderboard and Ranking}} \\ \hline
+Schema & A finished run stores name, time, wave, won and a timestamp (one row). \emph{Check:} each completed run adds a row. & \texttt{db.ts:30} \\ \hline
+Ranking & Winners first, then deepest wave, then fastest time, then most recent. \emph{Check:} a winner outranks a non-winner. & \texttt{db.ts:68} \\ \hline
+Validation & The server rejects malformed runs (name; time $>0$; wave 1--3; won boolean). \emph{Check:} a bad POST returns 400. & \texttt{route.ts:31} \\ \hline
+HTTP API & GET returns the ranked board; POST records one run. \emph{Check:} the board updates after a run. & \texttt{route.ts:20}, \texttt{route.ts:67} \\ \hline
+
+\caption{Condensed requirements catalogue with acceptance criteria and traceability
+to the implementing code.}
+\label{tab:appendix-trace}
+\end{longtable}
+\normalsize
+\renewcommand{\arraystretch}{1.0}
+
+The reducer requirements above are additionally covered by an automated test suite
+(\texttt{src/core/reducer.test.ts}, 23 cases): the lifecycle transitions, the
+reload and Big Shot guards, positional defeat, and the wave-completion and victory
+logic are each asserted directly against the pure reducer, so these rows are
+verified by test as well as by play.
 
 % ===========================================================================
 % REFERENCES

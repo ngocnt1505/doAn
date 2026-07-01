@@ -1,19 +1,5 @@
-/* =============================================================================
- * src/lib/scenery.ts
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Builds the STATIC battlefield (SRS FR-5/FR-6) in the player-POV layout:
- *     [ house (left, may be cut) ] [ gray weapon strip ] [ green yard ] → spawn
- *   Plus the fence along the far and right edges. These objects live for the
- *   whole session and never change, so they are created once here.
- *
- *   Models come from the cache (`modelCache.ts`); if a .glb failed to load the
- *   scene falls back to a primitive so the game still renders (SRS Reliability).
- *
- * WHAT DOES NOT BELONG HERE
- *   - Dynamic entities (enemies, bullets) → `src/entities/*`
- *   - Lighting (→ `lighting.ts`), GLB loading (→ `modelCache.ts`)
- * ============================================================================= */
+// Builds the STATIC battlefield: ground zones (house strip / weapon strip / yard),
+// the house, and the perimeter fence. These live for the whole session.
 
 import * as THREE from "three";
 import {
@@ -32,16 +18,14 @@ import {
 import { getModel, hasModel } from "@/lib/modelCache";
 import { centerOnGround, measureSize, scaleToExtent } from "@/lib/helpers";
 
-/** Adds ground, zones, house and fence to the scene (SRS FR-5). The player's
- *  cannon is NOT added here — it changes with weapon progression, so the weapon
- *  renderer (renderSystem) owns it. */
+// Adds ground, zones, house and fence. The cannon is owned by the weapon renderer.
 export function addScenery(scene: THREE.Scene): void {
   addGround(scene);
   addHouse(scene);
   addFence(scene);
 }
 
-/** A flat coloured plane on the ground, centred on (cx, 0, cz). */
+// A flat coloured plane on the ground, centred on (cx, 0, cz).
 function groundPlane(
   width: number,
   depth: number,
@@ -60,14 +44,12 @@ function groundPlane(
   return mesh;
 }
 
-/** Neutral base, the gray weapon strip, and the green monster yard (FR-5). */
+// Neutral base, the gray weapon strip, and the green monster yard.
 function addGround(scene: THREE.Scene): void {
-  // Wide neutral base under everything (incl. under the cut-off house).
   scene.add(
     groundPlane(80, YARD_DEPTH + 20, 0, 0, GROUND_COLOR, 0),
   );
 
-  // Gray weapon strip: between the house front and the yard.
   const stripW = YARD_START_X - DEFENSE_LINE_X;
   scene.add(
     groundPlane(
@@ -80,7 +62,6 @@ function addGround(scene: THREE.Scene): void {
     ),
   );
 
-  // Green yard: monsters only.
   const yardW = SPAWN_X - YARD_START_X;
   scene.add(
     groundPlane(
@@ -94,17 +75,16 @@ function addGround(scene: THREE.Scene): void {
   );
 }
 
-/** The protected house on the left; its front spans the depth (SRS BR-12). */
+// The protected house on the left; its front spans the depth.
 function addHouse(scene: THREE.Scene): void {
   let house: THREE.Object3D;
 
   if (hasModel("house")) {
     house = getModel("house");
-    house.rotation.y = HOUSE_ROTATION_Y; // front (door) faces the yard (+x)
-    scaleToExtent(house, YARD_DEPTH, "z"); // front spans the full width
+    house.rotation.y = HOUSE_ROTATION_Y;
+    scaleToExtent(house, YARD_DEPTH, "z");
     centerOnGround(house);
-    // Place the house by its RIGHT edge, a fixed gap left of the gray strip, so
-    // it never touches it regardless of the model's width (extends left/cut).
+    // Place the house by its right edge, a fixed gap left of the gray strip.
     const halfX = measureSize(house).x / 2;
     house.position.x = DEFENSE_LINE_X - HOUSE_GAP - halfX;
   } else {
@@ -120,20 +100,19 @@ function addHouse(scene: THREE.Scene): void {
   scene.add(house);
 }
 
-/** Tiles fence segments along the far (-z) and right (+x spawn) edges (FR-5). */
+// Tiles fence segments along the far (-z) and right (+x spawn) edges.
 function addFence(scene: THREE.Scene): void {
-  if (!hasModel("fence")) return; // decorative; skip if unavailable
+  if (!hasModel("fence")) return;
 
   // Measure one panel at the chosen scale to learn its natural length.
   const probe = getModel("fence");
   probe.scale.multiplyScalar(FENCE_SCALE);
   const size = measureSize(probe);
-  const longIsX = size.x >= size.z; // which local axis the panel runs along
+  const longIsX = size.x >= size.z;
   const panelLen = Math.max(size.x, size.z) || 4;
 
-  // Lay a SEAMLESS run of panels along an axis-aligned edge (x0,z0)→(x1,z1).
-  // We round to a whole number of panels, then stretch each by `cell/panelLen`
-  // so they meet exactly — no overlap, no gap, at any FENCE_SCALE.
+  // Lay a seamless run of panels along an axis-aligned edge, stretching each so
+  // they meet exactly with no overlap or gap.
   const placeRun = (x0: number, z0: number, x1: number, z1: number) => {
     const dx = x1 - x0;
     const dz = z1 - z0;
@@ -146,7 +125,6 @@ function addFence(scene: THREE.Scene): void {
     const stretch = cell / panelLen;
     const ux = dx / runLen;
     const uz = dz / runLen;
-    // Yaw that points the panel's long (local) axis along the run direction.
     const yaw = alongX
       ? longIsX
         ? 0
@@ -159,7 +137,6 @@ function addFence(scene: THREE.Scene): void {
       const t = cell * (i + 0.5);
       const seg = getModel("fence");
       seg.scale.multiplyScalar(FENCE_SCALE);
-      // Stretch only the long axis so the panel spans exactly one cell.
       if (longIsX) seg.scale.x *= stretch;
       else seg.scale.z *= stretch;
       seg.rotation.y = yaw;
@@ -170,7 +147,6 @@ function addFence(scene: THREE.Scene): void {
     }
   };
 
-  // Far edge (across the field) and right edge (the spawn side).
   placeRun(DEFENSE_LINE_X, -YARD_HALF_DEPTH, SPAWN_X, -YARD_HALF_DEPTH);
   placeRun(SPAWN_X, -YARD_HALF_DEPTH, SPAWN_X, YARD_HALF_DEPTH);
 }

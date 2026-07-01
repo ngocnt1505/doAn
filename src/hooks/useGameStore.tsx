@@ -1,27 +1,6 @@
-/* =============================================================================
- * src/hooks/useGameStore.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   The React↔store bridge. Creates ONE GameStore for the whole gameplay tree
- *   (provider), then lets any component read slices of state reactively and
- *   dispatch actions. This is how the UI Layer talks to the State Management
- *   Layer (SRS Architecture Overview): the canvas, HUD, control panel and
- *   overlays all share a single source of truth.
- *
- * WHY IT EXISTS
- *   The store (`src/core/gameStore.ts`) is framework-free. This file is the thin
- *   adapter that wires its subscribe/getState into React via
- *   `useSyncExternalStore`, so components re-render exactly when the slice they
- *   read changes — and no Redux/Zustand dependency is introduced (thesis goal).
- *
- * WHAT BELONGS HERE
- *   - The provider that owns the store instance
- *   - Hooks to read state (selectors) and reach the store for dispatch
- *
- * WHAT DOES NOT BELONG HERE
- *   - Reducer logic (→ `reducer.ts`), the frame loop (→ `gameLoop.ts`)
- *   - Any Three.js / rendering concern (→ `GameCanvas`)
- * ============================================================================= */
+// The React↔store bridge. Creates one GameStore for the gameplay tree (provider),
+// then lets components read slices of state reactively and dispatch actions via
+// useSyncExternalStore — no Redux/Zustand dependency.
 
 "use client";
 
@@ -37,8 +16,7 @@ import type { GameState, GameStatus } from "@/types/game";
 
 const GameStoreContext = createContext<GameStore | null>(null);
 
-/** Owns the single store for the gameplay tree. Created once (useRef) so the
- *  store survives re-renders; everything below it shares this instance. */
+// Owns the single store for the gameplay tree (created once, survives re-renders).
 export function GameStoreProvider({ children }: { children: ReactNode }) {
   const storeRef = useRef<GameStore | null>(null);
   if (!storeRef.current) storeRef.current = createStore();
@@ -49,7 +27,7 @@ export function GameStoreProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Reach the store itself — used to `dispatch` actions (Start, Pause, …). */
+// Reach the store itself — used to dispatch actions.
 export function useGameStore(): GameStore {
   const store = useContext(GameStoreContext);
   if (!store) {
@@ -58,10 +36,8 @@ export function useGameStore(): GameStore {
   return store;
 }
 
-/** Subscribe to a derived slice of state. The component re-renders only when the
- *  selected value changes (Object.is). IMPORTANT: return primitives or stable
- *  references — a selector that builds a new object every call re-renders every
- *  frame. For several fields at once, prefer `useGameState()`. */
+// Subscribe to a derived slice of state. Return primitives or stable references
+// so the component re-renders only when the selected value changes.
 export function useGameSelector<T>(selector: (state: GameState) => T): T {
   const store = useGameStore();
   return useSyncExternalStore(
@@ -71,10 +47,8 @@ export function useGameSelector<T>(selector: (state: GameState) => T): T {
   );
 }
 
-/** The whole state object. Its reference is stable between dispatches, so this
- *  is safe and convenient for components that read many fields (HUD). */
+// The whole state object (stable reference between dispatches).
 export const useGameState = (): GameState => useGameSelector((s) => s);
 
-/** Just the lifecycle status — overlays gate on this so they don't re-render on
- *  every TICK. */
+// Just the lifecycle status — overlays gate on this to avoid re-rendering each TICK.
 export const useGameStatus = (): GameStatus => useGameSelector((s) => s.status);

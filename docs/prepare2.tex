@@ -1,0 +1,254 @@
+\documentclass[12pt,a4paper]{article}
+
+% ===========================================================================
+% prepare2.tex  —  DEFENSE Q&A CHEAT-SHEET (private prep, not part of thesis)
+% ---------------------------------------------------------------------------
+% Mỗi mục gồm:  Q = câu hội đồng có thể hỏi
+%               A = câu trả lời mẫu: NGẮN, CHẮC, ĐÓNG CHỦ ĐỀ.
+% Nguyên tắc để KHÔNG bị hỏi sâu hơn:
+%   1. Trả lời 2–3 câu, nêu ngay "lý do thiết kế" rồi dừng.
+%   2. Chủ động nhận một giới hạn nhỏ ("đây là lựa chọn có chủ đích / là future
+%      work") — reviewer thấy mình đã lường trước thì không đào tiếp.
+%   3. Không hứa những gì code không làm; không bịa số.
+% ===========================================================================
+
+% --- Vietnamese-safe setup: works under pdfLaTeX AND XeLaTeX/LuaLaTeX --------
+% (pdfLaTeX needs T5 fontenc for Vietnamese glyphs; XeLaTeX/LuaLaTeX use
+%  fontspec + a Unicode font. Overleaf: chọn engine nào cũng biên dịch được.)
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T5]{fontenc}
+\else
+  \usepackage{fontspec}
+\fi
+\usepackage[vietnamese,english]{babel}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+
+% --- helper: một cặp Hỏi / Đáp -------------------------------------------
+\newcommand{\QA}[2]{%
+  \par\medskip\noindent\textbf{\textcolor{blue!60!black}{Q.}} #1\par
+  \smallskip\noindent\textbf{\textcolor{green!45!black}{A.}} #2\par}
+
+\newcommand{\tip}[1]{\par\smallskip\noindent%
+  \textit{\textcolor{gray}{[mẹo: #1]}}\par}
+
+\title{\bfseries Defense Q\&A --- Sổ tay chuẩn bị bảo vệ\\
+       \large 3D House Defense Game}
+\author{Nguyen Thuy Ngoc --- 23BI14344}
+\date{Hanoi, June 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textit{Tài liệu cá nhân để luyện trả lời. Mục tiêu: mỗi câu trả lời
+gọn 2--3 ý, nêu \textbf{lý do thiết kế} rồi dừng lại. Nếu bị dồn, quy về một
+trong ba câu chốt an toàn:}
+\begin{itemize}[nosep]
+  \item \textit{``Đây là lựa chọn có chủ đích để giữ phạm vi single-player.''}
+  \item \textit{``Cái này em có ghi trong phần Limitations / Future Work.''}
+  \item \textit{``Luật đó được quyết trong reducer thuần nên em test được, mời
+        thầy xem \texttt{reducer.test.ts}.''}
+\end{itemize}
+
+\tableofcontents
+\bigskip
+
+% ===========================================================================
+\section{Kiến trúc \& ``single source of truth''}
+% ===========================================================================
+
+\QA{Thầy thấy luận văn nói ``một state duy nhất'', nhưng spawn scheduler, collision
+và renderer đều giữ state riêng. Có mâu thuẫn không?}
+{Em phân biệt \emph{simulation state} và \emph{scheduling/derived state}. Toàn bộ
+\emph{luật chơi} --- enemy, đạn, máu, wave, thắng/thua --- nằm trong một
+\texttt{GameState} và chỉ đổi qua reducer. Scheduler chỉ giữ ``đã spawn tới con
+thứ mấy'', renderer chỉ giữ map id$\to$mesh: đó là chi tiết thực thi, không phải
+luật chơi, nên cố ý để ngoài để reducer thuần và test được. Nếu cần, các con số
+roster vẫn nằm ở \texttt{waves.ts} để reducer tự phát hiện wave xong.}
+\tip{nhấn ``luật chơi thì trong reducer'', ``lịch trình thì ngoài'' --- rồi dừng.}
+
+\QA{Vì sao trong GameState vẫn có \texttt{player.hp = 100} mà không dùng?}
+{Ban đầu em thiết kế thua theo máu nhà, sau đổi sang thua theo \emph{vị trí}
+(enemy chạm vạch nhà là thua ngay) vì nó rõ ràng hơn cho người chơi. Trường
+\texttt{hp} là tàn dư của thiết kế cũ; nó không ảnh hưởng luật hiện tại. Em sẽ dọn
+nó ở bản cuối.}
+\tip{nhận thẳng là tàn dư + sẽ dọn = đóng chủ đề, đừng cố bào chữa.}
+
+\QA{Chống double-hit (một vụ nổ chỉ gây damage một lần) làm ngoài reducer bằng
+một tập ``đã impact''. Sao không đưa vào reducer?}
+{Vụ nổ là một \emph{sự kiện tức thời}, không phải trạng thái lâu dài, nên em xử lý
+ở game loop và chỉ bắn ra các action \texttt{DAMAGE\_ENEMY} --- reducer vẫn là nơi
+duy nhất trừ máu. Set ``đã impact'' chỉ để loop không phát lại cùng một vụ nổ ở
+frame sau; nó không quyết định luật, chỉ khử lặp.}
+
+% ===========================================================================
+\section{Luật chơi \& cân bằng số}
+% ===========================================================================
+
+\QA{Big Shot ghi ``every 3'' nhưng đọc code thì phát thứ 4 mới là Big Shot?}
+{Đúng, ý nghĩa là ``sau mỗi 3 phát thường thì có 1 phát mạnh''. Bộ đếm chạy
+0,1,2 cho ba phát thường rồi phát kế là Big Shot và reset. Cách này để người chơi
+luôn được thưởng đều đặn sau một nhịp bắn ổn định.}
+
+\QA{Advanced bắn 2 đạn, blast bán kính 6 mà chỉ cách nhau 1.5 --- một enemy có thể
+ăn damage từ cả hai. Cố ý hay lỗi?}
+{Cố ý. Đây là phần thưởng của tier cao nhất: nếu người chơi ngắm khéo vào một cụm,
+hai vụ nổ chồng lên cho damage cộng dồn --- đó chính là lý do Advanced đáng để
+mở khóa. Damage vẫn có trần vì mỗi enemy có máu giới hạn.}
+\tip{gọi nó là ``reward for good aim'', đừng gọi là ``bug''.}
+
+\QA{Người chơi có thể chọn lại vũ khí yếu hơn đã mở. Có phải lỗi?}
+{Không. Em cho tự do đổi giữa mọi vũ khí đã mở vì mỗi tier có đánh đổi riêng ---
+Basic reload nhanh hơn, đạn khác tốc độ. Cho người chơi chọn theo tình huống làm
+phần thưởng ``được chọn'' chứ không bị ép, đúng như thay đổi so với SRS gốc mà em
+nêu trong luận văn.}
+
+\QA{Thời gian băng đồng của enemy là bao nhiêu --- code có chỗ ghi 8s/15s?}
+{Con số chuẩn là 25/30/35 giây (easy/medium/hard), đúng như bảng trong luận văn.
+Dòng 8s/15s là comment cũ từ lúc prototype, em quên cập nhật; giá trị thực trong
+bảng \texttt{TRAVEL\_TIME} là 25/30/35. Em đã tune chậm lại sau khi chơi thử,
+điều này em có ghi ở chương Kết quả.}
+\tip{chốt ngay ``25/30/35 là chuẩn'' để hội đồng không lấy số sai.}
+
+\QA{``25 giây băng đồng'' là theo trục thẳng hay theo đường đi lượn sóng?}
+{Theo trục tiến về nhà (trục x) --- tốc độ theo trục đó là hằng số nên thời gian
+tới nhà luôn đúng 25/30/35s bất kể đường lượn. Đường lượn sin chỉ để enemy tản ra
+theo chiều rộng cho đỡ dồn một hàng, không làm chậm tiến độ về nhà.}
+
+\QA{Vì sao thua theo vị trí, không theo máu nhà?}
+{Vì mục tiêu người chơi phải cực rõ: ``đừng để con nào lọt qua''. Thua ngay khi
+một con chạm vạch nhà giữ được độ căng, và em kiểm tra được luật này bằng test
+thuần trong reducer.}
+
+% ===========================================================================
+\section{Backend, dữ liệu \& leaderboard}
+% ===========================================================================
+
+\QA{Vì sao có tới ba lớp chống trùng submit (ref, map 30s, DB 10s)?}
+{Ba lớp ở ba mức khác nhau: ref chặn React Strict Mode gọi effect hai lần trong
+cùng một lần chơi; map trên client chặn double-click gửi lại; cửa sổ 10s ở DB là
+lưới an toàn cuối cùng nếu request tới hai lần do mạng. Chúng bổ trợ nhau để đảm
+bảo ``một lần chơi = một bản ghi''.}
+\tip{nếu bị hỏi về false-positive (hai người trùng hệt trong 10s): ``xác suất cực
+thấp với tên + thời gian mili-giây; em chấp nhận đánh đổi này để chống double-post,
+và có thể siết bằng token mỗi ván ở future work''.}
+
+\QA{API leaderboard mở, không auth --- làm sao chống điểm giả?}
+{Trong phạm vi single-player, cục bộ, em ưu tiên tính đơn giản: server chỉ
+\emph{validate hình dạng} dữ liệu (tên, thời gian $>0$, wave 1--3, won boolean).
+Chống gian lận thật sự cần tài khoản và token phía server --- em xếp vào Future
+Work cùng với việc thêm player accounts.}
+\tip{đừng cố bảo vệ như thể đã chống gian lận; quy thẳng về Future Work.}
+
+\QA{Bốn khóa sắp xếp nhưng với winner thì wave luôn 3, với loser thì bỏ time ---
+vậy có thừa không?}
+{Không thừa: bốn khóa xử lý \emph{mọi} trường hợp trong một câu \texttt{ORDER BY}.
+Với nhóm winner, khóa quyết định là thời gian; với nhóm chưa thắng, là wave sâu
+nhất rồi tới mới nhất. Viết đủ bốn khóa để một truy vấn duy nhất trả về đúng thứ
+hạng cho cả hai nhóm mà client không phải sắp xếp lại.}
+
+\QA{SQLite file sẽ không tồn tại trên host stateless --- vậy demo chạy ở đâu?}
+{Em demo trên máy cục bộ (localhost), nơi file SQLite hoạt động đầy đủ. Em có nêu
+rõ trong Limitations rằng để deploy công khai cần thay bằng DB có host; nhờ mọi
+truy cập DB gói trong một file \texttt{db.ts}, việc đổi sang Postgres chỉ sửa
+đúng file đó.}
+
+% ===========================================================================
+\section{Hiệu năng \& đo đạc}
+% ===========================================================================
+
+\QA{Sao chương Kết quả không có ảnh chụp màn hình game / leaderboard?}
+{Em cố ý không đưa screenshot tĩnh, vì thứ quan trọng nhất của game này là
+\emph{chuyển động} --- di chuyển real-time, ngắm bắn, phản hồi hình ảnh --- ảnh
+tĩnh không thể hiện được. Thay vào đó em trình diễn \textbf{trực tiếp} ngay sau
+phần thuyết trình: đi trọn một ván từ welcome, countdown, combat, Big Shot, phần
+thưởng đổi vũ khí, tới màn thắng, và leaderboard cập nhật theo các ván vừa chơi.}
+\tip{nói ngay ``em sẽ demo trực tiếp'' rồi mời hội đồng xem cuối buổi --- đóng chủ đề.}
+
+\QA{Số FPS đo bằng gì, trên bao nhiêu máy?}
+{Em đo bằng Chrome DevTools (Performance / FPS meter) trên một máy desktop, trong
+lúc chơi thật ở wave đông nhất. Kết quả: đa số thời gian chạm trần 60\,Hz, chỉ tụt
+ngắn xuống khoảng 31 khi combat nặng --- luôn $\ge$ mục tiêu 30 FPS. Em nêu rõ đây
+là một cấu hình tham chiếu, không phải benchmark nhiều máy.}
+\tip{chủ động nói ``một máy, một cấu hình tham chiếu'' để không bị hỏi ``sao ít mẫu''.}
+
+\QA{Vì sao khẳng định dip FPS là do garbage collection?}
+{Đó là giải thích hợp lý nhất: mô hình state bất biến tạo nhiều object ngắn hạn mỗi
+frame, GC thu hồi chúng gây khựng ngắn. Em chưa profile allocation chi tiết nên nói
+đây là nguyên nhân \emph{chính khả dĩ}; hướng tối ưu (tái dùng object, instanced
+mesh) em để ở Future Work vì FPS chưa bao giờ tụt dưới mục tiêu.}
+\tip{dùng chữ ``khả dĩ / likely'', đừng khẳng định tuyệt đối nguyên nhân.}
+
+\QA{Delta-time bị chặn ở 1/15s có ý nghĩa gì?}
+{Để một tab chạy nền quay lại không làm simulation nhảy cóc một bước lớn. Khi frame
+quá dài, em coi như một frame hơi chậm thay vì tua nhanh. Trên máy rất yếu điều này
+làm mô phỏng chậm lại đôi chút --- em chọn ưu tiên tính ổn định/đúng đắn hơn là
+đúng thời gian tuyệt đối, hợp lý cho một game single-player.}
+
+% ===========================================================================
+\section{Lý thuyết / đồ họa}
+% ===========================================================================
+
+\QA{Vì sao damage giảm tuyến tính theo khoảng cách, không dùng inverse-square vật lý?}
+{Vì đây là lựa chọn \emph{gameplay}, không phải mô phỏng vật lý. Tuyến tính dễ hiểu
+và công bằng: tâm nổ full damage, ra tới bán kính thì bằng 0, người chơi ước lượng
+được ngay nên khỏi cần tay. Inverse-square sẽ dồn hầu hết sát thương vào một điểm
+rất nhỏ, khó chơi hơn.}
+
+\QA{Raycasting cắt với mặt phẳng toán học $y=0$ thay vì mesh sàn --- khác gì?}
+{Cắt với một mặt phẳng toán học cho giao điểm chính xác và rẻ (một phép giải đại
+số), không phụ thuộc lưới tam giác hay độ mấp mô của sàn hiển thị. Nhờ vậy điểm
+ngắm luôn nằm đúng dưới con trỏ, ổn định bất kể mô hình sàn thay đổi.}
+
+\QA{Đạn giải ngược vận tốc đứng để chạm đích tại $t=T$; cung có bị dựng đứng khi
+bắn xa với thời gian bay ngắn không?}
+{Về lý thuyết vận tốc đứng tăng khi $T$ nhỏ, nhưng ba tier có $T$ = 1.3/1.0/0.7s
+được chọn sao cho cung vẫn nhìn tự nhiên trong kích thước sân thực tế. Em kiểm tra
+bằng mắt khi tune và thấy ổn ở mọi điểm hợp lệ trong yard.}
+
+% ===========================================================================
+\section{Câu hỏi ``analyst'' (nửa phân tích của luận văn)}
+% ===========================================================================
+
+\QA{SRS đầy đủ đâu? Sao code tham chiếu FR/BR/TR mà luận văn không in ra danh mục?}
+{Em trình bày yêu cầu dưới dạng \emph{quyết định thiết kế có kèm tiêu chí chấp
+nhận} trong Chương 3, và cô đọng danh mục đại diện (kèm tiêu chí + vị trí code) ở
+Phụ lục A. Bộ định danh FR/BR/TR là hệ đánh số em dùng xuyên suốt để truy vết từ
+luật tới dòng code. Nếu thầy cần, em có bản danh mục chi tiết hơn để trình.}
+\tip{nếu chưa có file SRS rời: nói ``bản đầy đủ em quản lý riêng, phần đại diện đã ở
+Phụ lục A'' --- đừng hứa đưa cái không có.}
+
+\QA{Em học phương pháp đặc tả (viết SRS) từ đâu?}
+{Từ kỳ thực tập: em quan sát cách hệ thống được phân tích và đặc tả trước khi làm,
+rồi áp dụng vào đồ án độc lập này bằng cách viết yêu cầu có tiêu chí kiểm thử. Đây
+là lần đầu em tự thực hành trọn vẹn nửa phân tích, nên bài học lớn nhất là ``một
+yêu cầu chỉ hữu ích khi kiểm chứng được bằng cách chơi''.}
+
+\QA{Ba thay đổi so với SRS gốc là gì và vì sao?}
+{Một, cho người chơi \emph{chọn} có dùng vũ khí mới hay không (thưởng thấy xứng
+đáng). Hai, bỏ điểm số trên HUD (wave + thời gian đã đủ, điểm gây rối). Ba, tăng
+thời gian băng đồng chậm lại sau khi chơi thử vì nhịp gốc quá gấp. Cả ba đều là
+quyết định lúc play-test và em ghi lại để thiết kế trung thực.}
+
+% ===========================================================================
+\section{Ba câu chốt an toàn (học thuộc)}
+% ===========================================================================
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Khi bị hỏi ``sao không làm X''}: ``Phạm vi đồ án là single-player,
+        desktop, chuột --- X (multiplayer / account / mobile) em cố ý để ngoài và
+        nêu ở Future Work.''
+  \item \textbf{Khi bị hỏi về một con số}: quy về nguồn duy nhất ---
+        ``số đó nằm ở \texttt{constants.ts} / \texttt{weapons.ts} / \texttt{waves.ts},
+        mỗi giá trị chỉ khai báo một chỗ.''
+  \item \textbf{Khi bị hỏi ``có chắc luật đúng không''}: ``Luật quyết trong reducer
+        thuần và có 23 test tự động trong \texttt{reducer.test.ts} kiểm chứng
+        lifecycle, reload, Big Shot, thua theo vị trí và điều kiện thắng.''
+\end{enumerate}
+
+\end{document}

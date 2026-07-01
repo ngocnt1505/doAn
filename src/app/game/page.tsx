@@ -1,14 +1,6 @@
-/* =============================================================================
- * src/app/game/page.tsx  (route: "/game")
- * -----------------------------------------------------------------------------
- * The gameplay surface. Owns the single game store (via <GameStoreProvider>) and
- * layers the whole UI over the full-screen <GameCanvas>:
- *   - HUD + ControlPanel: live gameplay info and runtime controls
- *   - Overlays: Welcome, Countdown, Pause, Win, Lose
- * Every overlay/panel reads `status` from the shared store and shows itself only
- * for the matching state, so the screen always reflects the state machine
- * (SRS State Diagram): idle → countdown → playing ⇄ paused → win / lose.
- * ============================================================================= */
+// The gameplay surface (route "/game"). Owns the single game store and layers the
+// whole UI over the full-screen <GameCanvas>. Each overlay reads `status` from the
+// shared store and shows itself only for the matching state.
 
 "use client";
 
@@ -33,11 +25,10 @@ export default function GamePage() {
         <main className="relative h-screen w-screen overflow-hidden">
           <GameCanvas />
 
-          {/* HUD + runtime controls */}
           <HUD />
           <ControlPanel />
 
-          {/* State-driven overlays — each renders only for its status */}
+          {/* State-driven overlays — each renders only for its status. */}
           <StartScreen />
           <Countdown />
           <PauseScreen />

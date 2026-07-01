@@ -1,22 +1,5 @@
-/* =============================================================================
- * src/core/reducer.ts
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   The pure state-transition function: (state, action) → state. No side
- *   effects, no Three.js, no DOM. This is the ONLY place GameState changes.
- *
- * WHY IT EXISTS
- *   A single reducer keeps the data flow predictable (SRS State Architecture):
- *   UI and systems dispatch actions, the reducer decides the next world.
- *
- * WHAT BELONGS HERE
- *   - One `switch` over the action union
- *   - Pure, deterministic transitions returning new state
- *
- * WHAT DOES NOT BELONG HERE
- *   - rAF / timers (→ `gameLoop.ts`)
- *   - Rendering, asset loading, input listening
- * ============================================================================= */
+// The pure state-transition function: (state, action) → state. No side effects.
+// This is the only place GameState changes.
 
 import type { GameAction } from "@/types/actions";
 import type { GameState } from "@/types/game";
@@ -27,14 +10,29 @@ import { advanceEnemyStates } from "@/systems/enemyState";
 import { createTargetMarker } from "@/entities/TargetMarker";
 import { createBullet } from "@/entities/Bullet";
 import { WEAPONS, WEAPON_ORDER, TWIN_SHOT_SPREAD } from "@/core/weapons";
-import { WEAPON_ORIGIN, WAVE_TRANSITION_SECONDS } from "@/core/constants";
+import {
+  WEAPON_ORIGIN,
+  WAVE_TRANSITION_SECONDS,
+  WAVE_CLEAR_DELAY,
+  TOTAL_WAVES,
+} from "@/core/constants";
+import { rosterSize } from "@/core/waves";
+
+// Shared transition for a cleared non-final wave: unlock the next weapon and
+// open the reward overlay.
+function enterReward(state: GameState): GameState {
+  const unlocked = WEAPON_ORDER[state.wave];
+  const weaponsUnlocked =
+    unlocked && !state.weaponsUnlocked.includes(unlocked)
+      ? [...state.weaponsUnlocked, unlocked]
+      : state.weaponsUnlocked;
+  return { ...state, status: "reward", weaponsUnlocked, waveClearTimer: null };
+}
 
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    // Start a fresh session in the countdown; capture the leaderboard name.
     case "START_GAME": {
-      // Begin a brand-new session from the welcome screen (SRS FR-2). Capture the
-      // leaderboard name from the start-screen prompt; a blank / missing name
-      // means "Pass" (anonymous — that run won't be submitted at game end).
       const name = action.name?.trim();
       return {
         ...initialState(),
@@ -43,10 +41,12 @@ export function reducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    // Pause: freeze play and cancel any pending wave-clear grace.
     case "PAUSE":
       if (state.status !== "playing") return state;
-      return { ...state, status: "paused" };
+      return { ...state, status: "paused", waveClearTimer: null };
 
+    // Resume from pause.
     case "RESUME":
       if (state.status !== "paused") return state;
       return { ...state, status: "playing" };
@@ -57,17 +57,20 @@ export function reducer(state: GameState, action: GameAction): GameState {
     case "LOSE":
       return { ...state, status: "lose" };
 
+    // Restart: fresh state back into the countdown, keeping the name.
     case "RESTART":
-      // Fresh state, straight back into the countdown (SRS FR-28). Keep the same
-      // player name so a retry still counts on the leaderboard without retyping.
       return { ...initialState(), status: "countdown", playerName: state.playerName };
 
     case "RETURN_TO_MENU":
       return initialState();
 
+    // Add a new enemy and count it toward this wave's roster.
     case "SPAWN_ENEMY":
-      // Append a new enemy to the world (Milestone 3 spawn system).
-      return { ...state, enemies: [...state.enemies, action.enemy] };
+      return {
+        ...state,
+        enemies: [...state.enemies, action.enemy],
+        spawnedThisWave: state.spawnedThisWave + 1,
+      };
 
     case "REMOVE_ENEMY":
       return {
@@ -75,18 +78,12 @@ export function reducer(state: GameState, action: GameAction): GameState {
         enemies: state.enemies.filter((e) => e.id !== action.id),
       };
 
+    // Per-frame enemy update: advance the state machine, move MOVING enemies,
+    // and lose the instant one reaches the house line.
     case "MOVE_ENEMIES": {
-      // Per-frame enemy update: advance the state machine (SPAWNING → MOVING)
-      // then move the MOVING ones. DEAD enemies stay in state (frozen) so the
-      // renderer can play their fall animation; they're removed via REMOVE_ENEMY
-      // once that finishes. Gated to Playing so movement freezes on Pause / win /
-      // lose (SRS FR-26 / BR-96: no gameplay updates while paused).
       if (state.status !== "playing" || state.enemies.length === 0) return state;
       const enemies = moveEnemies(advanceEnemyStates(state.enemies), action.dt);
 
-      // Defeat (SRS FR-29 / BR-104/105): the instant any living enemy reaches the
-      // house front (the defensive boundary, GOAL_X), the game is lost. Movement
-      // clamps enemies AT GOAL_X, so an enemy that got there has breached it.
       const breached = enemies.some(
         (e) => e.state === "moving" && e.pos.x <= GOAL_X + 1e-3,
       );
@@ -95,8 +92,8 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, enemies };
     }
 
+    // Reduce one enemy's health; mark it dead at zero.
     case "DAMAGE_ENEMY": {
-      // SRS BR-31 (lose health), BR-32 (clamp 0..max), BR-33 (destroy at 0).
       let changed = false;
       const enemies = state.enemies.map((e) => {
         if (e.id !== action.id || e.state === "dead") return e;
@@ -109,25 +106,19 @@ export function reducer(state: GameState, action: GameAction): GameState {
     }
 
     case "CLEAR_TARGET":
-      // Hide the "X" — used the instant a bullet reaches it (M9).
       return state.marker ? { ...state, marker: null } : state;
 
+    // Fire the active weapon: build projectile(s), advance the Big Shot counter,
+    // start the reload. Ignored while not playing or still reloading.
     case "FIRE_SHOT": {
-      // Only fire while Playing (SRS FR-15 precondition) and when the weapon has
-      // finished reloading (BR-130..132) — clicks during reload are ignored.
       if (state.status !== "playing" || state.weaponCooldown > 0) return state;
 
-      // Fire the active weapon at the clicked target (SRS FR-16/FR-18). The Big
-      // Shot counter only advances on NORMAL attacks (BR-63); reaching the
-      // weapon's interval makes THIS shot a Big Shot and resets the counter
-      // (BR-64). Advanced fires two projectiles, spread apart in depth (BR-45/57).
       const spec = WEAPONS[state.weapon];
       const isBigShot = state.attackCount >= spec.bigShotEvery;
       const damage = isBigShot ? spec.bigShotDamage : spec.damage;
 
       const bullets = [...state.bullets];
       for (let i = 0; i < spec.projectiles; i++) {
-        // Centre a single shot; spread a twin shot to ±TWIN_SHOT_SPREAD in z.
         const zOffset =
           spec.projectiles > 1
             ? (i - (spec.projectiles - 1) / 2) * 2 * TWIN_SHOT_SPREAD
@@ -147,40 +138,31 @@ export function reducer(state: GameState, action: GameAction): GameState {
         ...state,
         bullets,
         attackCount: isBigShot ? 0 : state.attackCount + 1,
-        weaponCooldown: spec.reloadTime, // start the reload (BR-130..132)
+        weaponCooldown: spec.reloadTime,
         marker: createTargetMarker(action.target),
       };
     }
 
+    // Switch the active weapon from the HUD picker (only if unlocked).
     case "SELECT_WEAPON": {
-      // Switch the active weapon from the HUD picker — only if it's unlocked
-      // (SRS FR-25). Switching resets the Big Shot counter (per-weapon, BR-62).
       if (
         action.weapon === state.weapon ||
         !state.weaponsUnlocked.includes(action.weapon)
       ) {
         return state;
       }
-      // Switching weapons resets the Big Shot counter and the reload (ready now).
       return { ...state, weapon: action.weapon, attackCount: 0, weaponCooldown: 0 };
     }
 
+    // A non-final wave is done: unlock the next weapon and open the reward overlay.
     case "WAVE_CLEARED": {
-      // A non-final wave is done: unlock the next weapon and open the reward
-      // overlay (SRS FR-23/FR-25). Wave 3 completion is handled as WIN instead.
       if (state.status !== "playing") return state;
-      const unlocked = WEAPON_ORDER[state.wave]; // clearing wave N unlocks [N]
-      const weaponsUnlocked =
-        unlocked && !state.weaponsUnlocked.includes(unlocked)
-          ? [...state.weaponsUnlocked, unlocked]
-          : state.weaponsUnlocked;
-      return { ...state, status: "reward", weaponsUnlocked };
+      return enterReward(state);
     }
 
+    // Player closed the reward overlay: adopt or keep the weapon, then run the
+    // between-wave transition before the next wave.
     case "RESOLVE_REWARD": {
-      // Player closed the reward overlay. "Use now" activates the just-unlocked
-      // weapon; "Continue" keeps the current one (it stays unlocked). Then run
-      // the 3s wave transition before the next wave (SRS FR-24).
       if (state.status !== "reward") return state;
       const unlocked = WEAPON_ORDER[state.wave];
       const weapon = action.useNew && unlocked ? unlocked : state.weapon;
@@ -188,40 +170,57 @@ export function reducer(state: GameState, action: GameAction): GameState {
         ...state,
         weapon,
         attackCount: weapon !== state.weapon ? 0 : state.attackCount,
-        weaponCooldown: 0, // start the next wave ready to fire
-        wave: state.wave + 1, // the transition shows this upcoming number
+        weaponCooldown: 0,
+        wave: state.wave + 1,
         status: "transition",
         waveTransition: WAVE_TRANSITION_SECONDS,
+        spawnedThisWave: 0,
+        waveClearTimer: null,
       };
     }
 
+    // Advance bullets along their arc (only while playing).
     case "MOVE_BULLETS": {
-      // Advance bullets along their arc (M7/M8). Gated to Playing so projectiles
-      // freeze on pause / win / lose (SRS FR-26 / BR-96).
       if (state.status !== "playing" || state.bullets.length === 0) return state;
       return { ...state, bullets: moveBullets(state.bullets, action.dt) };
     }
 
+    // Time step. Advances countdown / elapsed / reload, and decides wave
+    // completion and victory from state.
     case "TICK": {
-      // Time only advances during the countdown and active play.
+      // Countdown: flip to playing when it elapses.
       if (state.status === "countdown") {
         const countdown = state.countdown - action.dt;
-        // When the countdown elapses, the machine flips itself to Playing
-        // (SRS FR-3) — no external trigger needed.
         if (countdown <= 0) return { ...state, countdown: 0, status: "playing" };
         return { ...state, countdown };
       }
+      // Active play: advance timers, then detect a cleared wave.
       if (state.status === "playing") {
-        return {
+        const base: GameState = {
           ...state,
           elapsed: state.elapsed + action.dt,
-          // Tick down the weapon reload (BR-130..132); clamp at 0 = ready.
           weaponCooldown: Math.max(0, state.weaponCooldown - action.dt),
         };
+
+        // A wave is clear once its whole roster has spawned and no enemy remains.
+        const size = rosterSize(base.wave);
+        const fieldClear =
+          size > 0 && base.spawnedThisWave >= size && base.enemies.length === 0;
+        if (!fieldClear) {
+          return base.waveClearTimer === null ? base : { ...base, waveClearTimer: null };
+        }
+
+        // Run a short grace, then win (final wave) or open the reward overlay.
+        const timer =
+          base.waveClearTimer === null ? WAVE_CLEAR_DELAY : base.waveClearTimer - action.dt;
+        if (timer > 0) return { ...base, waveClearTimer: timer };
+
+        return base.wave >= TOTAL_WAVES
+          ? { ...base, status: "win", waveClearTimer: null }
+          : enterReward({ ...base, waveClearTimer: null });
       }
+      // Between-wave transition: flip to playing when the message elapses.
       if (state.status === "transition") {
-        // Count down the between-wave message; flip to Playing when it elapses so
-        // the spawn scheduler starts the next wave (SRS FR-24 / BR-89).
         const waveTransition = state.waveTransition - action.dt;
         if (waveTransition <= 0) {
           return { ...state, waveTransition: 0, status: "playing" };

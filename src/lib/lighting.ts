@@ -1,22 +1,9 @@
-/* =============================================================================
- * src/lib/lighting.ts
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Adds the scene lighting (SRS FR-34): soft ambient fill plus a directional
- *   "sun" that casts shadows across the battlefield.
- *
- * WHAT BELONGS HERE
- *   - Light construction and shadow-camera configuration
- *
- * WHAT DOES NOT BELONG HERE
- *   - Meshes / scenery (→ `scenery.ts`)
- *   - Renderer shadow-map enable flag (→ `threeSetup.ts`)
- * ============================================================================= */
+// Adds the scene lighting: soft ambient fill plus a directional "sun" that casts
+// shadows across the battlefield.
 
 import * as THREE from "three";
 import { BATTLEFIELD_HALF } from "@/core/constants";
 
-/** Adds ambient + directional sunlight to the scene. */
 export function addLighting(scene: THREE.Scene): void {
   scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
@@ -27,6 +14,7 @@ export function addLighting(scene: THREE.Scene): void {
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 100;
 
+  // Size the shadow camera to cover the whole field.
   const s = BATTLEFIELD_HALF + 6;
   sun.shadow.camera.left = -s;
   sun.shadow.camera.right = s;

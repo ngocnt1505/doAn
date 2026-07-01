@@ -1,16 +1,7 @@
-/* =============================================================================
- * src/components/overlays/WaveRewardScreen.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Weapon-reward overlay (Phase 7). Shown while status is "reward": a wave has
- *   been cleared and the next weapon just unlocked (SRS FR-25). It tells the
- *   player which weapon they earned and offers two choices:
- *     - "Use now"  → switch to the new weapon immediately (RESOLVE_REWARD useNew)
- *     - "Continue" → keep the current weapon (it stays unlocked for the picker)
- *   Either choice starts the 3-second wave transition before the next wave
- *   (SRS FR-24). This intentionally overrides SRS BR-94 (auto-activate) so the
- *   player decides, per the project requirement.
- * ============================================================================= */
+// Weapon-reward overlay (status "reward"): a wave cleared and the next weapon
+// unlocked. Offers "Use now" (switch immediately) or "Continue" (keep current).
+// Either choice starts the wave transition. The player chooses (overrides the
+// original auto-activate rule).
 
 "use client";
 
@@ -25,8 +16,7 @@ export default function WaveRewardScreen() {
 
   if (status !== "reward") return null;
 
-  // Clearing wave N unlocks WEAPON_ORDER[N] (wave is still the cleared number
-  // here — it's incremented when the reward is resolved).
+  // Clearing wave N unlocks WEAPON_ORDER[N] (wave is still the cleared number).
   const unlocked = WEAPON_ORDER[wave];
   const spec = unlocked ? WEAPONS[unlocked] : null;
   if (!spec) return null;

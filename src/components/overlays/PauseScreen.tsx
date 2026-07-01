@@ -1,12 +1,5 @@
-/* =============================================================================
- * src/components/overlays/PauseScreen.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Pause overlay (SRS FR-26/FR-27). Shown while status is "paused". Offers
- *   Resume (paused → playing, FR-27) and Restart (fresh session, FR-28). The
- *   simulation is already frozen by the reducer — TICK is a no-op outside
- *   countdown/playing — so the timer and entities hold their state (BR-96/97).
- * ============================================================================= */
+// Pause overlay (status "paused"): offers Resume, Restart and Quit. The reducer
+// already freezes the simulation while paused.
 
 "use client";
 
@@ -36,7 +29,7 @@ export default function PauseScreen() {
             variant="secondary"
             onClick={() => dispatch({ type: "RETURN_TO_MENU" })}
           >
-            Quit 
+            Quit
           </Button>
         </div>
       </Panel>

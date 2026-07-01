@@ -1,22 +1,5 @@
-/* =============================================================================
- * src/core/gameStore.ts
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   A tiny framework-free store wrapping the reducer. Holds the current
- *   GameState, exposes `dispatch`, and lets listeners subscribe to changes.
- *
- * WHY IT EXISTS
- *   The SRS calls for a single source of truth driven by a reducer. Keeping the
- *   store dependency-free (no Redux/Zustand) makes the architecture obvious for
- *   a thesis. React components subscribe via a hook (`useGameStore`, later).
- *
- * WHAT BELONGS HERE
- *   - getState / dispatch / subscribe
- *
- * WHAT DOES NOT BELONG HERE
- *   - The reducer logic (→ `reducer.ts`)
- *   - The frame loop (→ `gameLoop.ts`)
- * ============================================================================= */
+// A tiny framework-free store wrapping the reducer. Holds the current GameState,
+// exposes dispatch, and lets listeners subscribe to changes.
 
 import type { GameAction } from "@/types/actions";
 import type { GameState } from "@/types/game";
@@ -38,9 +21,10 @@ export function createStore(initial: GameState = initialState()): GameStore {
   return {
     getState: () => state,
 
+    // Run the reducer; notify listeners only on a real state change.
     dispatch(action) {
       const next = reducer(state, action);
-      if (next === state) return; // no-op transitions don't notify
+      if (next === state) return;
       state = next;
       for (const listener of listeners) listener(state);
     },

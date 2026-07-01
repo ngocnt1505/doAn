@@ -1,13 +1,5 @@
-/* =============================================================================
- * src/components/overlays/WaveTransition.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Between-wave transition message (SRS FR-24). Shown while status is
- *   "transition": a large "Wave N" announcing the UPCOMING wave (BR-88), held
- *   for 3 seconds (BR-89) while no enemies spawn (BR-90). The reducer owns the
- *   timing (it counts `waveTransition` down each TICK and flips to Playing at 0);
- *   this component only renders the message.
- * ============================================================================= */
+// Between-wave transition message (status "transition"): a large "Wave N" for the
+// upcoming wave, held for a few seconds. The reducer owns the timing.
 
 "use client";
 

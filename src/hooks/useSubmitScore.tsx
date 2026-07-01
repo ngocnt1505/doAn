@@ -1,20 +1,7 @@
-/* =============================================================================
- * src/hooks/useSubmitScore.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Records a finished run on the leaderboard. The moment the game reaches "win"
- *   or "lose", this submits the run (name + time + wave + won) via the API — once
- *   per run — and exposes the outcome so the end screens can show progress and
- *   highlight the player's new row.
- *
- * WHY A PROVIDER (not a plain hook in the end screens)
- *   The Win/Lose overlays mount only while their status is active, and React
- *   Strict Mode double-invokes effects. Centralising the submit in one always-
- *   mounted provider (with a ref guard) guarantees a single POST per game,
- *   whichever screen the player ends on.
- *
- *   Network side effects deliberately live HERE, not in the pure reducer.
- * ============================================================================= */
+// Records a finished run on the leaderboard. The moment the game reaches "win" or
+// "lose", this submits the run via the API — once per run — and exposes the
+// outcome so the end screens can show progress and highlight the player's new row.
+// Network side effects live here, not in the pure reducer.
 
 "use client";
 
@@ -30,17 +17,18 @@ import { useGameState } from "@/hooks/useGameStore";
 import { postScore } from "@/lib/scoresApi";
 import type { Score } from "@/types/score";
 
-/** Lifecycle of the score submission for the current run. */
+// Lifecycle of the score submission for the current run.
 export type SubmitState =
-  | { phase: "idle" } // game not finished yet
-  | { phase: "skipped" } // finished, but the player passed (anonymous)
-  | { phase: "submitting" } // POST in flight
-  | { phase: "done"; score: Score } // recorded; `score.id` is the row to highlight
-  | { phase: "error"; message: string }; // POST failed (game still playable)
+  | { phase: "idle" }
+  | { phase: "skipped" }
+  | { phase: "submitting" }
+  | { phase: "done"; score: Score }
+  | { phase: "error"; message: string };
 
 const ScoreSubmissionContext = createContext<SubmitState>({ phase: "idle" });
 
 const RECENT_SUBMISSION_TTL_MS = 30_000;
+// Guards against a duplicate submit for an identical run within the TTL.
 const recentSubmissions = new Map<
   string,
   { expiresAt: number; promise: Promise<Score> }
@@ -74,8 +62,7 @@ export function ScoreSubmissionProvider({ children }: { children: ReactNode }) {
   const state = useGameState();
   const [submit, setSubmit] = useState<SubmitState>({ phase: "idle" });
 
-  // Latest game values, read inside the status-triggered effect without making
-  // them effect dependencies (we only want to act on the status transition).
+  // Latest game values, read inside the effect without being dependencies.
   const latest = useRef(state);
   latest.current = state;
 
@@ -85,14 +72,14 @@ export function ScoreSubmissionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { status } = state;
 
-    // Not an end state → this is a fresh / in-progress run; re-arm the guard.
+    // Not an end state → fresh / in-progress run; re-arm the guard.
     if (status !== "win" && status !== "lose") {
       handled.current = false;
       setSubmit({ phase: "idle" });
       return;
     }
 
-    if (handled.current) return; // already handled this run's end
+    if (handled.current) return;
     handled.current = true;
 
     const { playerName, elapsed, wave } = latest.current;
@@ -143,7 +130,7 @@ export function ScoreSubmissionProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Read the current run's submission state (for the end screens). */
+// Read the current run's submission state (for the end screens).
 export function useScoreSubmission(): SubmitState {
   return useContext(ScoreSubmissionContext);
 }

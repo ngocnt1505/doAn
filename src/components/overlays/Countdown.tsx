@@ -1,15 +1,6 @@
-/* =============================================================================
- * src/components/overlays/Countdown.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   The pre-play countdown sequence (SRS FR-3): renders "3" → "2" → "1" →
- *   "Ready", one per second, while status is "countdown". The reducer owns the
- *   timing (it decrements `countdown` each TICK and flips to Playing at 0); this
- *   component only maps the remaining seconds to the label to display.
- *
- *   Mapping: with COUNTDOWN_LABELS.length seconds total, the label index is
- *   (length - ceil(remaining)), so 4s→"3", 3s→"2", 2s→"1", 1s→"Ready".
- * ============================================================================= */
+// The pre-play countdown (status "countdown"): renders "3" → "2" → "1" → "Ready",
+// one per second. The reducer owns the timing; this maps the remaining seconds
+// to the label to display.
 
 "use client";
 
@@ -27,7 +18,7 @@ export default function Countdown() {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-      {/* keyed by label so each new value re-mounts and replays the pop animation */}
+      {/* keyed by label so each new value replays the pop animation */}
       <span
         key={label}
         className="countdown-pop text-7xl font-bold tracking-wide text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)]"

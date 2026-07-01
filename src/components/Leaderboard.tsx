@@ -1,12 +1,5 @@
-/* =============================================================================
- * src/components/Leaderboard.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Fetches and renders the ranked leaderboard from `GET /api/scores`. Handles the
- *   three async UI states explicitly — loading, error, empty — and highlights the
- *   player's just-submitted row (`highlightId`). Re-fetches whenever `highlightId`
- *   changes, so a freshly recorded run shows up immediately on the end screens.
- * ============================================================================= */
+// Fetches and renders the ranked leaderboard from GET /api/scores. Handles the
+// loading, error and empty states, and highlights the player's just-submitted row.
 
 "use client";
 
@@ -14,7 +7,7 @@ import { useEffect, useState } from "react";
 import type { Score } from "@/types/score";
 import { getScores } from "@/lib/scoresApi";
 
-/** Milliseconds → "m:ss.t" (e.g. 72000 → "1:12.0"). */
+// Milliseconds → "m:ss.t".
 function formatTime(ms: number): string {
   const totalSeconds = ms / 1000;
   const minutes = Math.floor(totalSeconds / 60);
@@ -22,16 +15,14 @@ function formatTime(ms: number): string {
   return `${minutes}:${seconds.toFixed(1).padStart(4, "0")}`;
 }
 
-/** A run's outcome as a short label: cleared the game, or the wave it died on. */
+// A run's outcome as a short label: cleared the game, or the wave it died on.
 function resultLabel(score: Score): string {
   return score.won ? "✓ Cleared" : `Wave ${score.waveReached}`;
 }
 
 interface LeaderboardProps {
-  /** Row id to highlight (the player's own freshly-submitted run). Changing this
-   *  also triggers a re-fetch so a new entry appears right away. */
+  // Row id to highlight; changing it also triggers a re-fetch.
   highlightId?: number | null;
-  /** Max rows to show. */
   limit?: number;
   className?: string;
 }
@@ -44,6 +35,7 @@ export default function Leaderboard({
   const [scores, setScores] = useState<Score[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Load the board; re-fetch when the highlighted run changes.
   useEffect(() => {
     let cancelled = false;
     setScores(null);

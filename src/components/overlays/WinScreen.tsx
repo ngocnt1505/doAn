@@ -1,11 +1,5 @@
-/* =============================================================================
- * src/components/overlays/WinScreen.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Victory overlay (SRS FR-32/FR-33). Shown while status is "win". Offers
- *   "Return to Start Page", which dispatches RETURN_TO_MENU (→ idle), clearing
- *   all gameplay data and bringing back the Welcome Screen for a new session.
- * ============================================================================= */
+// Victory overlay (status "win"): shows the leaderboard and a button back to the
+// welcome screen.
 
 "use client";
 

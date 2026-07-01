@@ -1,11 +1,5 @@
-/* =============================================================================
- * src/components/overlays/LoseScreen.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Defeat overlay (SRS FR-30 defeat). Shown while status is "lose" — i.e. an
- *   enemy reached the house. Offers a Restart button that dispatches RESTART
- *   (fresh session at Wave 1 with the Basic weapon, FR-28/BR-101..103).
- * ============================================================================= */
+// Defeat overlay (status "lose"): an enemy reached the house. Shows the
+// leaderboard and offers Restart or Quit.
 
 "use client";
 

@@ -1,12 +1,5 @@
-/* =============================================================================
- * src/components/ControlPanel.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   In-game runtime control (SRS Runtime Control System, FR-26). While playing,
- *   it offers Pause (playing → paused). Resume and Restart live on the Pause
- *   overlay, so the in-corner panel stays minimal. The button just dispatches an
- *   action — the reducer is the single place state changes.
- * ============================================================================= */
+// In-game runtime control: while playing, offers Pause. Resume and Restart live
+// on the Pause overlay. The button just dispatches an action.
 
 "use client";
 

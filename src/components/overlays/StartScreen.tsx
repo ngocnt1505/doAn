@@ -1,15 +1,6 @@
-/* =============================================================================
- * src/components/overlays/StartScreen.tsx
- * -----------------------------------------------------------------------------
- * RESPONSIBILITY
- *   Welcome overlay (SRS FR-1). Shown while status is "idle": title, a short
- *   objective description, and a name prompt with two ways to start:
- *     - "Play with name" → START_GAME { name } — the run is recorded on the
- *       leaderboard at game end.
- *     - "Pass"           → START_GAME (no name) — play anonymously, not recorded.
- *   It also offers a "View leaderboard" toggle so players can see the rankings
- *   before playing. No gameplay runs behind it (BR-1/BR-2).
- * ============================================================================= */
+// Welcome overlay (status "idle"): title, objective, and a name prompt with two
+// ways to start — "Play with name" (recorded) or "Pass" (anonymous) — plus a
+// "View leaderboard" toggle.
 
 "use client";
 
@@ -20,7 +11,7 @@ import Leaderboard from "@/components/Leaderboard";
 import { useGameStatus, useGameStore } from "@/hooks/useGameStore";
 
 const MAX_NAME_LENGTH = 20;
-/** Remember the last name across sessions so the player needn't retype it. */
+// Remember the last name across sessions so the player needn't retype it.
 const NAME_STORAGE_KEY = "houseDefense.playerName";
 
 export default function StartScreen() {
@@ -29,7 +20,7 @@ export default function StartScreen() {
   const [name, setName] = useState("");
   const [showBoard, setShowBoard] = useState(false);
 
-  // Prefill from the last name used on this device (nice for repeat demos).
+  // Prefill from the last name used on this device.
   useEffect(() => {
     const saved = localStorage.getItem(NAME_STORAGE_KEY);
     if (saved) setName(saved);
