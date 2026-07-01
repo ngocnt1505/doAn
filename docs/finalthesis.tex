@@ -1607,60 +1607,60 @@ file has a unique name, so the base name locates it unambiguously under
 
 \multicolumn{3}{|l|}{\textbf{Game Session Management}} \\ \hline
 FR-2 & Start resets to a fresh world in the countdown and keeps the entered name (blank = anonymous). \emph{Check:} Start clears the previous run. & \texttt{reducer.ts:35}, \texttt{state.ts:8} \\ \hline
-FR-3 & Countdown shows 3--2--1--Ready, one per second, then play begins on its own. \emph{Check:} play starts with no extra input after ``Ready''. & \texttt{reducer.ts:190}, \texttt{constants.ts:12} \\ \hline
-FR-28 & Restart returns straight to a fresh countdown, keeping the name. \emph{Check:} ``Restart'' begins a new run. & \texttt{reducer.ts:61} \\ \hline
+FR-3 & Countdown shows 3--2--1--Ready, one per second, then play begins on its own. \emph{Check:} play starts with no extra input after ``Ready''. & \texttt{constants.ts:10}, \texttt{reducer.ts:190} \\ \hline
+FR-28 & Restart returns straight to a fresh countdown, keeping the name. \emph{Check:} ``Restart'' begins a new run. & \texttt{reducer.ts:60} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Gameplay Environment}} \\ \hline
-BR-12/28 & Fixed zones along $x$ (house / strip / yard); the house front spans the depth $z$. \emph{Check:} monsters cross the green yard toward the house. & \texttt{constants.ts:29} \\ \hline
+BR-12/28 & Fixed zones along $x$ (house / strip / yard); the house front spans the depth $z$. \emph{Check:} monsters cross the green yard toward the house. & \texttt{constants.ts:24}, \texttt{scenery.ts:47} \\ \hline
 FR-7 & Only clicks inside the yard are valid targets. \emph{Check:} clicking the house or strip fires nothing. & \texttt{shootingSystem.ts:10}, \texttt{GameCanvas.tsx:123} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Enemy System}} \\ \hline
 FR-8 / BR-17--21 & Three classes with fixed HP (easy 100, medium 200, hard 400). \emph{Check:} a hard enemy survives more hits than an easy one. & \texttt{Enemy.ts:7} \\ \hline
-FR-8 & Speed derived from a per-class field-crossing time (easy fastest). \emph{Check:} easy reaches the house before hard. & \texttt{movementSystem.ts:15} \\ \hline
+FR-8 & Speed derived from a per-class field-crossing time (easy fastest). \emph{Check:} easy reaches the house before hard. & \texttt{movementSystem.ts:15}, \texttt{movementSystem.ts:27} \\ \hline
 BR-25 & A spawned enemy immediately enters the moving state. \emph{Check:} no enemy stands still after spawning. & \texttt{enemyState.ts:8} \\ \hline
-BR-27--30 & Enemies weave on a smooth sine path, spread across depth. \emph{Check:} enemies do not funnel into one line. & \texttt{movementSystem.ts:33} \\ \hline
+BR-27--30 & Enemies weave on a smooth sine path, spread across depth. \emph{Check:} enemies do not funnel into one line. & \texttt{spawnSystem.ts:46}, \texttt{movementSystem.ts:40} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Weapon System}} \\ \hline
 FR-12--14 & Three tiers with rising damage and reload. \emph{Check:} Advanced hits harder but reloads slower. & \texttt{weapons.ts:20} \\ \hline
-BR-91--93 & Clearing wave 1/2 unlocks the next tier. \emph{Check:} Medium is selectable after wave 1. & \texttt{weapons.ts:57}, \texttt{reducer.ts:24} \\ \hline
+BR-91--93 & Clearing wave 1/2 unlocks the next tier. \emph{Check:} Medium is selectable after wave 1. & \texttt{weapons.ts:57}, \texttt{reducer.ts:23} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Shooting and Damage}} \\ \hline
-FR-15 & A left-click on the yard drops the marker and fires. \emph{Check:} an ``X'' marks the click and a shot launches. & \texttt{GameCanvas.tsx:111} \\ \hline
-FR-16 / BR-130--132 & A shot is ignored while the weapon reloads. \emph{Check:} rapid clicks cannot beat the reload. & \texttt{reducer.ts:114} \\ \hline
+FR-15 & A left-click on the yard drops the marker and fires. \emph{Check:} an ``X'' marks the click and a shot launches. & \texttt{GameCanvas.tsx:111}, \texttt{reducer.ts:142} \\ \hline
+FR-16 / BR-130--132 & A shot is ignored while the weapon reloads. \emph{Check:} rapid clicks cannot beat the reload. & \texttt{reducer.ts:113}, \texttt{reducer.ts:141} \\ \hline
 FR-19 / BR-67--69 & Impact damage falls off linearly to zero at the blast radius. \emph{Check:} centre = full damage, edge $\approx$ none. & \texttt{collisionSystem.ts:29} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Wave Progression}} \\ \hline
 BR-74 & Exactly three waves; victory follows wave 3. \emph{Check:} the game ends after the third wave. & \texttt{constants.ts:16} \\ \hline
 BR-75--77 & Fixed escalating rosters (3 / 5 / 7). \emph{Check:} wave 3 contains three hard enemies. & \texttt{waves.ts:7} \\ \hline
-BR-23 / TR-4 & The first enemy of a wave arrives 3\,s after ``Ready''. \emph{Check:} a short pause precedes the first spawn. & \texttt{spawnSystem.ts:19} \\ \hline
+BR-23 / TR-4 & The first enemy of a wave arrives 3\,s after ``Ready''. \emph{Check:} a short pause precedes the first spawn. & \texttt{spawnSystem.ts:19}, \texttt{spawnSystem.ts:41} \\ \hline
 BR-79--81 & Spawn gap = the class interval (easy 3 / medium 4 / hard 5\,s). \emph{Check:} tougher classes appear less often. & \texttt{spawnSystem.ts:12} \\ \hline
-FR-23 & A wave clears once its whole roster has spawned and no enemy remains --- decided in the reducer. \emph{Check:} reward/victory appears only after the last monster is gone. & \texttt{reducer.ts:190}, \texttt{waves.ts:14} \\ \hline
+FR-23 & A wave clears once its whole roster has spawned and no enemy remains --- decided in the reducer. \emph{Check:} reward/victory appears only after the last monster is gone. & \texttt{reducer.ts:205}, \texttt{waves.ts:14} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Runtime Control}} \\ \hline
 FR-26 / BR-96 & Pause freezes all gameplay updates. \emph{Check:} enemies and bullets stop while paused. & \texttt{reducer.ts:45}, \texttt{reducer.ts:83} \\ \hline
 BR-98 & The scene keeps being drawn while paused (fed $dt=0$). \emph{Check:} the field is still visible, just frozen. & \texttt{GameCanvas.tsx:168} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Victory and Defeat}} \\ \hline
-FR-29 / BR-104--105 & Defeat the instant a moving enemy reaches the house line (positional, not HP). \emph{Check:} one breach ends the game. & \texttt{reducer.ts:88} \\ \hline
-FR-31 & Victory once the third wave is fully cleared. \emph{Check:} clearing wave 3 shows the win screen. & \texttt{reducer.ts:190} \\ \hline
+FR-29 / BR-104--105 & Defeat the instant a moving enemy reaches the house line (positional, not HP). \emph{Check:} one breach ends the game. & \texttt{reducer.ts:87} \\ \hline
+FR-31 & Victory once the third wave is fully cleared. \emph{Check:} clearing wave 3 shows the win screen. & \texttt{reducer.ts:218} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Heads-Up Display}} \\ \hline
-HUD & The HUD shows wave, elapsed time and active weapon, and freezes with the simulation. \emph{Check:} the timer stops while paused. & \texttt{HUD.tsx} \\ \hline
+HUD & The HUD shows wave, elapsed time and active weapon, and freezes with the simulation. \emph{Check:} the timer stops while paused. & \texttt{HUD.tsx:33}, \texttt{HUD.tsx:64} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Rendering}} \\ \hline
 FR-33 & A perspective camera frames the field from high and behind. \emph{Check:} the whole yard is visible from above. & \texttt{camera.ts:8}, \texttt{constants.ts:73} \\ \hline
-Lighting & Ambient light plus one directional ``sun'' with soft shadow maps. \emph{Check:} enemies cast shadows on the yard. & \texttt{lighting.ts:7}, \texttt{threeSetup.ts:23} \\ \hline
+Lighting & Ambient light plus one directional ``sun'' with soft shadow maps. \emph{Check:} enemies cast shadows on the yard. & \texttt{lighting.ts:8}, \texttt{threeSetup.ts:23} \\ \hline
 Picking & A camera ray is intersected with the mathematical ground plane $y=0$. \emph{Check:} the marker lands exactly under the cursor. & \texttt{raycasting.ts:36} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Physics and Collision}} \\ \hline
 FR-17 / FR-36 & Projectiles follow a ballistic arc solved to land on target at the flight time. \emph{Check:} a shot arcs and lands on the clicked point. & \texttt{bulletSystem.ts:14} \\ \hline
 FR-38 & Area damage resolved once per impact over enemies in radius. \emph{Check:} one shot can hit several close enemies. & \texttt{collisionSystem.ts:16} \\ \hline
-FR-39 & Bullets are removed after flight plus a short linger. \emph{Check:} projectiles vanish soon after landing. & \texttt{bulletSystem.ts:28} \\ \hline
+FR-39 & Bullets are removed after flight plus a short linger. \emph{Check:} projectiles vanish soon after landing. & \texttt{bulletSystem.ts:28}, \texttt{constants.ts:47} \\ \hline
 
 \multicolumn{3}{|l|}{\textbf{Leaderboard and Ranking}} \\ \hline
-Schema & A finished run stores name, time, wave, won and a timestamp (one row). \emph{Check:} each completed run adds a row. & \texttt{db.ts:30} \\ \hline
+Schema & A finished run stores name, time, wave, won and a timestamp (one row). \emph{Check:} each completed run adds a row. & \texttt{db.ts:30}, \texttt{db.ts:48} \\ \hline
 Ranking & Winners first, then deepest wave, then fastest time, then most recent. \emph{Check:} a winner outranks a non-winner. & \texttt{db.ts:68} \\ \hline
-Validation & The server rejects malformed runs (name; time $>0$; wave 1--3; won boolean). \emph{Check:} a bad POST returns 400. & \texttt{route.ts:31} \\ \hline
+Validation & The server rejects malformed runs (name; time $>0$; wave 1--3; won boolean). \emph{Check:} a bad POST returns 400. & \texttt{route.ts:31}, \texttt{route.ts:75} \\ \hline
 HTTP API & GET returns the ranked board; POST records one run. \emph{Check:} the board updates after a run. & \texttt{route.ts:20}, \texttt{route.ts:67} \\ \hline
 
 \caption{Condensed requirements catalogue with acceptance criteria and traceability
